@@ -32,8 +32,8 @@ Route::post('password/reset', [AuthController::class, 'passwordReset'])->name('p
 
 Route::middleware('auth:api')->group(function () {
 
-    Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
-    Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
+    Route::get('me', [AuthController::class, 'me']);
+    Route::post('logout', [AuthController::class, 'logout']);
 
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('contents', ContentController::class);
