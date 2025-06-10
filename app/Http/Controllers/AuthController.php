@@ -3,23 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use Exception;
-use Illuminate\Support\Facades\Password;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Exception;
 
 class AuthController extends Controller
 {
-
-
-
     public function sendResetOTP(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -90,17 +88,143 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'Password reset successful.']);
     }
 
-
-
-
     // Register user
+    // public function register(Request $request)
+    // {
+    //     try {
+    //         $validator = Validator::make($request->all(), [
+    //             'name' => 'required|string|max:255',
+    //             'email' => 'required|email|unique:users',
+    //             'password' => 'required|string|min:6',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Validation failed.',
+    //                 'errors' => $validator->errors()
+    //             ], 400);
+    //         }
+
+    //         $user = User::create([
+    //             'name' => $request->name,
+    //             'email' => $request->email,
+    //             'password' => Hash::make($request->password),
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'User registered successfully',
+    //             'data' => $user
+    //         ], 201);
+    //     } catch (Exception $e) {
+    //         Log::error('Error registering user: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to register user.'
+    //         ], 500);
+    //     }
+    // }
+
+    // public function register(Request $request)
+    // {
+    //     try {
+    //         $validator = Validator::make($request->all(), [
+    //             'first_name' => 'required|string|max:255',
+    //             'last_name' => 'required|string|max:255',
+    //             'phone' => 'required|string|max:20',
+    //             'company_name' => 'required|string|max:255',
+    //             'email' => 'required|email|unique:users,email',
+    //             'password' => 'required|string|min:6|same:confirm_password',
+    //             'confirm_password' => 'required|string|min:6',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Validation failed.',
+    //                 'errors' => $validator->errors()
+    //             ], 400);
+    //         }
+
+    //         $user = User::create([
+    //             'first_name' => $request->first_name,
+    //             'last_name' => $request->last_name,
+    //             'phone' => $request->phone,
+    //             'company_name' => $request->company_name,
+    //             'email' => $request->email,
+    //             'password' => Hash::make($request->password),
+    //         ]);
+
+    //         // Generate JWT token
+    //         $token = JWTAuth::fromUser($user);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'User registered successfully',
+    //             'token' => $token,
+    //             'data' => $user
+    //         ], 201);
+    //     } catch (Exception $e) {
+    //         Log::error('Error registering user: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to register user.',
+    //             'error' => $e->getMessage()  // For debugging; remove in production
+    //         ], 500);
+    //     }
+    // }
+
+    // Login user and get token
+    // public function login(Request $request)
+    // {
+    //     try {
+    //         $validator = Validator::make($request->all(), [
+    //             'email' => 'required|email',
+    //             'password' => 'required|string',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Validation failed.',
+    //                 'errors' => $validator->errors()
+    //             ], 400);
+    //         }
+
+    //         $credentials = $request->only('email', 'password');
+
+    //         if (!$token = JWTAuth::attempt($credentials)) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Unauthorized. Invalid credentials.'
+    //             ], 401);
+    //         }
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Login successful',
+    //             'token' => $token
+    //         ]);
+    //     } catch (Exception $e) {
+    //         Log::error('Login error: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Login failed.'
+    //         ], 500);
+    //     }
+    // }
+
+
+
     public function register(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users',
-                'password' => 'required|string|min:6',
+                'first_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6|same:confirm_password',
+                'confirm_password' => 'required|string|min:6',
             ]);
 
             if ($validator->fails()) {
@@ -112,7 +236,10 @@ class AuthController extends Controller
             }
 
             $user = User::create([
-                'name' => $request->name,
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'phone' => $request->phone,
+                'company_name' => $request->company_name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
@@ -126,12 +253,12 @@ class AuthController extends Controller
             Log::error('Error registering user: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to register user.'
+                'message' => 'Failed to register user.',
+                'error' => $e->getMessage()  // Remove in production
             ], 500);
         }
     }
 
-    // Login user and get token
     public function login(Request $request)
     {
         try {
@@ -157,16 +284,35 @@ class AuthController extends Controller
                 ], 401);
             }
 
+            // Get the authenticated user
+            $user = JWTAuth::user();
+
+            // Check user role - adjust field name and values as per your User model
+            $allowedRoles = ['admin', 'user', 'editor', 'author'];
+            if (!in_array($user->role, $allowedRoles)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Role not allowed.'
+                ], 403);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
-                'token' => $token
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    // 'name' => $user->name,  // if you want to return the user name
+                ],
             ]);
         } catch (Exception $e) {
-            Log::error('Login error: ' . $e->getMessage());
+            Log::error('Error registering user: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Login failed.'
+                'message' => 'Failed to register user.',
+                'error' => $e->getMessage()  // <== This will show you the actual reason
             ], 500);
         }
     }
@@ -222,12 +368,11 @@ class AuthController extends Controller
             : response()->json(['success' => false, 'message' => __($status)], 400);
     }
 
-
     public function updatePassword(Request $request)
     {
         $request->validate([
             'current_password' => ['required'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'], // Laravel expects a `new_password_confirmation` field for confirmation
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],  // Laravel expects a `new_password_confirmation` field for confirmation
         ]);
 
         $user = Auth::user();
