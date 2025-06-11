@@ -45,7 +45,6 @@ Route::middleware('auth:api')->group(function () {
             Route::get('info', [SettingController::class, 'index']);
 
             
-            
         });
     });
 
