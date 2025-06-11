@@ -68,6 +68,64 @@ class SettingController extends Controller
         }
     }
 
+    public function storeOrUpdateForUser(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login first.'
+            ], 401);
+        }
+
+        try {
+            $validated = $request->validate([
+                'username' => 'nullable|string|max:255|unique:users,username,' . Auth::id(),
+                'first_name' => 'nullable|string|max:255',
+                'profile_pic' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10248',
+            ]);
+
+            $user = Auth::user();
+
+            $user->username = $validated['username'] ?? $user->username;
+            $user->first_name = $validated['first_name'] ?? $user->first_name;
+
+            if ($request->hasFile('profile_pic')) {
+                $file = $request->file('profile_pic');
+                $imageName = time() . '_profile.' . $file->getClientOriginalExtension();
+                $destinationPath = public_path('uploads/profiles');
+
+                // Delete old profile pic if it exists
+                if ($user->profile_pic && file_exists(public_path($user->profile_pic))) {
+                    unlink(public_path($user->profile_pic));
+                }
+
+                // Move and save the new file
+                $file->move($destinationPath, $imageName);
+                $user->profile_pic = 'uploads/profiles/' . $imageName;
+            }
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully.',
+                'data' => [
+                    'username' => $user->username,
+                    'first_name' => $user->first_name,
+                    'profile_pic' => $user->profile_pic,
+                ]
+            ]);
+        } catch (Exception $e) {
+            \Log::error('Error updating user profile: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function storeOrUpdate(Request $request)
     {
         if (!Auth::check()) {

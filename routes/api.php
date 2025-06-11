@@ -35,25 +35,19 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
 
     Route::middleware('role:admin')->group(function () {
-
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
         Route::apiResource('subscriptions', SubscriptionController::class);
 
         Route::prefix('settings')->group(function () {
-
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
             Route::post('info', [SettingController::class, 'storeOrUpdate']);
             Route::get('info', [SettingController::class, 'index']);
-
-            
         });
     });
-    
 
     Route::middleware('role:subscriber')->group(function () {
-
+        Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
+        Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
     });
 });
-
-
