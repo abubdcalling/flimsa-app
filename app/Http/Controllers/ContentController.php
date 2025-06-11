@@ -54,7 +54,7 @@ class ContentController extends Controller
             if ($request->hasFile('video1')) {
                 $videoFile = $request->file('video1');
 
-                \Cloudinary::config([
+                Cloudinary::config([
                     'cloud_name' => 'drdztqgcx',
                     'api_key'    => '397762455993245',
                     'api_secret' => 'LN0hDY5NtauBzN5P-hnj093ld20',

@@ -37,6 +37,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
 
     Route::middleware('role:admin')->group(function () {
+
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
         Route::apiResource('subscriptions', SubscriptionController::class);
@@ -46,6 +47,12 @@ Route::middleware('auth:api')->group(function () {
             Route::post('info', [SettingController::class, 'storeOrUpdate']);
             Route::get('info', [SettingController::class, 'index']);
         });
+
+        Route::get('all-genres', [GenreController::class, 'showsAllGenres']);
+        Route::get('all-contents', [GenreController::class, 'showsAllContents']);
+        Route::get('dashboard', [ContentController::class, 'showsDashboard']);
+
+
     });
 
     Route::middleware('role:subscriber')->group(function () {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Content;
 use App\Models\Genre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -10,12 +11,57 @@ use Illuminate\Validation\ValidationException;
 
 class GenreController extends Controller
 {
-
     public function index()
     {
         $genres = Genre::all();
 
         return response()->json($genres);
+    }
+
+    public function showsAllGenres()
+    {
+        $genres = Genre::all()->map(function ($genre) {
+            return [
+                'id' => $genre->id,
+                'name' => $genre->name,
+                'thumbnail' => $genre->thumbnail,
+                'date' => $genre->created_at->format('Y-m-d'),
+                'content' => $genre->content,
+            ];
+        });
+
+        return response()->json($genres);
+    }
+
+    public function showsAllContents()
+    {
+        try {
+            $contents = Content::all()->map(function ($content) {
+                return [
+                    'content_name' => $content->title,
+                    'video1' => $content->video1,
+                    'description' => $content->description,
+                    'publish' => $content->publish,
+                    'schedule' => $content->schedule,
+                    'genre_id' => $content->genre_id,
+                    'image' => $content->image,
+                    'created_at' => $content->created_at?->format('Y-m-d'),
+                    'updated_at' => $content->updated_at?->format('Y-m-d'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Contents fetched successfully.',
+                'data' => $contents,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch contents.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function show($id)
@@ -37,7 +83,7 @@ class GenreController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'thumbnail' => 'nullable|image',
             ]);
 
             if ($request->hasFile('thumbnail')) {
