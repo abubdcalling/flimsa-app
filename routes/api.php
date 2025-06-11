@@ -35,8 +35,8 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware('role:admin')->group(function () {
 
-        // Route::apiResource('contents', ContentController::class);
-        // Route::apiResource('genres', GenreController::class);
+        Route::apiResource('contents', ContentController::class);
+        Route::apiResource('genres', GenreController::class);
 
         Route::prefix('settings')->group(function () {
 
@@ -52,5 +52,4 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:subscriber')->group(function () {});
 });
 
-Route::apiResource('contents', ContentController::class);
-Route::apiResource('genres', GenreController::class);
+
