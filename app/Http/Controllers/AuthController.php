@@ -173,10 +173,14 @@ class AuthController extends Controller
                 ], 403);
             }
 
+            // Generate a refresh token
+            $refreshToken = JWTAuth::refresh(JWTAuth::getToken());
+
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
                 'token' => $token,
+                'refresh_token' => $refreshToken,
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
