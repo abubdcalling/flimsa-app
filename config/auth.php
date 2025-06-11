@@ -38,7 +38,7 @@ return [
             'provider' => 'users',
         ],
         'api' => [
-            'driver' => 'jwt',  // ← important
+            'driver' => 'jwt',  
             'provider' => 'users',
         ],
     ],

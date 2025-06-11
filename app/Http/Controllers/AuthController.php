@@ -13,7 +13,11 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Token;
 use Exception;
 
 class AuthController extends Controller
@@ -147,7 +151,7 @@ class AuthController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed.',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 400);
             }
 
@@ -156,29 +160,27 @@ class AuthController extends Controller
             if (!$token = JWTAuth::attempt($credentials)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized. Invalid credentials.'
+                    'message' => 'Unauthorized. Invalid credentials.',
                 ], 401);
             }
 
-            // Get the authenticated user
             $user = JWTAuth::user();
 
-            // Check if user's role is allowed
             $allowedRoles = ['admin', 'subscriber'];
-
             if (!in_array($user->roles, $allowedRoles)) {
+                JWTAuth::invalidate($token);  // Optional: Invalidate token if role is not allowed
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized. Role not allowed.'
+                    'message' => 'Unauthorized. Role not allowed.',
                 ], 403);
             }
 
-            // Generate a refresh token using the token we just got
-            $refreshToken = JWTAuth::refresh($token);
+            // Proper refresh with token set
+            $refreshToken = JWTAuth::setToken($token)->refresh();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Login successful',
+                'message' => 'Login successful.',
                 'token' => $token,
                 'refresh_token' => $refreshToken,
                 'user' => [
@@ -189,10 +191,53 @@ class AuthController extends Controller
             ]);
         } catch (Exception $e) {
             Log::error('Login error: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Login failed.',
-                'error' => $e->getMessage()
+                'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function logout()
+    {
+        try {
+            if (!$token = JWTAuth::getToken()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token not provided.',
+                ], 401);  // 401 is more accurate for missing token
+            }
+
+            JWTAuth::invalidate($token);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully logged out.'
+            ]);
+        } catch (TokenExpiredException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token has already expired.',
+            ], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token is invalid.',
+            ], 401);
+        } catch (JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token could not be parsed.',
+            ], 400);
+        } catch (Exception $e) {
+            Log::error('Logout error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to logout.',
+                'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage(),
             ], 500);
         }
     }
@@ -211,25 +256,6 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch user details.'
-            ], 500);
-        }
-    }
-
-    // Logout user (invalidate token)
-    public function logout()
-    {
-        try {
-            JWTAuth::invalidate(JWTAuth::getToken());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully logged out'
-            ]);
-        } catch (Exception $e) {
-            Log::error('Logout error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to logout.'
             ], 500);
         }
     }
