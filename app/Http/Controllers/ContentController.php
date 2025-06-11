@@ -36,6 +36,8 @@ class ContentController extends Controller
     // POST /api/contents
     public function store(Request $request)
     {
+        // dd(env('CLOUDINARY_URL'));
+
         $validated = $request->validate([
             'video1'       => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
             'title'        => 'required|string',
@@ -51,14 +53,20 @@ class ContentController extends Controller
             $videoName = null;
             if ($request->hasFile('video1')) {
                 $videoFile = $request->file('video1');
-                // $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
-                // $videoFile->move(public_path('uploads/Videos'), $videoName);
+
+                \Cloudinary::config([
+                    'cloud_name' => 'drdztqgcx',
+                    'api_key'    => '397762455993245',
+                    'api_secret' => 'LN0hDY5NtauBzN5P-hnj093ld20',
+                    'secure'     => true,
+                ]);
+
                 $videoName = Cloudinary::uploadVideo($videoFile->getRealPath(), [
                     'folder' => 'Contents/Videos',
                     'resource_type' => 'video'
                 ])->getSecurePath();
-
             }
+
 
             // Handle image upload safely
             $imageName = null;
