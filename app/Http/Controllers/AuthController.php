@@ -3,23 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use Exception;
-use Illuminate\Support\Facades\Password;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Exception;
 
 class AuthController extends Controller
 {
-
-
-
     public function sendResetOTP(Request $request)
     {
         $request->validate(['email' => 'required|email']);
@@ -90,17 +88,14 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'Password reset successful.']);
     }
 
-
-
-
-    // Register user
     public function register(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users',
-                'password' => 'required|string|min:6',
+                'first_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6|same:confirm_password',
+                'confirm_password' => 'required|string|min:6',
             ]);
 
             if ($validator->fails()) {
@@ -111,27 +106,35 @@ class AuthController extends Controller
                 ], 400);
             }
 
+            $validated = $validator->validated();
+
             $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'first_name' => $validated['first_name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'User registered successfully',
-                'data' => $user
+                'data' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'email' => $user->email,
+                    // 'roles' => $user->role, // Assuming you have a 'role' field in your User model
+                ]
             ], 201);
         } catch (Exception $e) {
             Log::error('Error registering user: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to register user.'
+                'message' => 'Failed to register user.',
+                'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage()
             ], 500);
         }
     }
 
-    // Login user and get token
     public function login(Request $request)
     {
         try {
@@ -157,16 +160,35 @@ class AuthController extends Controller
                 ], 401);
             }
 
+            // Get the authenticated user
+            $user = JWTAuth::user();
+
+            // Check if user's role is allowed
+            $allowedRoles = ['admin', 'subscriber'];
+
+            if (!in_array($user->roles, $allowedRoles)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Role not allowed.'
+                ], 403);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
-                'token' => $token
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'role' => $user->roles,
+                ],
             ]);
         } catch (Exception $e) {
             Log::error('Login error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Login failed.'
+                'message' => 'Login failed.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -222,12 +244,11 @@ class AuthController extends Controller
             : response()->json(['success' => false, 'message' => __($status)], 400);
     }
 
-
     public function updatePassword(Request $request)
     {
         $request->validate([
             'current_password' => ['required'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'], // Laravel expects a `new_password_confirmation` field for confirmation
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],  // Laravel expects a `new_password_confirmation` field for confirmation
         ]);
 
         $user = Auth::user();
