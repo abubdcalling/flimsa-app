@@ -13,22 +13,9 @@ class GenreController extends Controller
 
     public function index()
     {
-        try {
-            $genres = Genre::withCount('contents')->get();
+        $genres = Genre::all();
 
-            return response()->json([
-                'success' => true,
-                'data' => $genres,
-                'message' => 'Genres retrieved successfully',
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching genres: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong. Please try again later.',
-            ], 500);
-        }
+        return response()->json($genres);
     }
 
     public function show($id)
