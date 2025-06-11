@@ -51,8 +51,8 @@ Route::middleware('auth:api')->group(function () {
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
 
+        
         Route::post('/checkout', [StripeController::class, 'createPaymentIntent']);
-
 
     });
 });
