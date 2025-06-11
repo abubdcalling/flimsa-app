@@ -35,7 +35,14 @@ class SettingController extends Controller
                 ], 400);
             }
 
-            $user = Auth::user();
+            $user = auth('api')->user();  // ✅ Explicitly use 'api' guard for JWT
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
 
             if (!Hash::check($request->current_password, $user->password)) {
                 return response()->json([
@@ -51,12 +58,69 @@ class SettingController extends Controller
                 'success' => true,
                 'message' => 'Password updated successfully.',
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error updating password: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating the password.',
+            ], 500);
+        }
+    }
+
+    public function storeOrUpdate(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login first.'
+            ], 401);
+        }
+
+        try {
+            $validated = $request->validate([
+                'first_name' => 'nullable|string|max:255',
+                'last_name' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:255',
+                'email' => 'nullable|email|max:255|unique:users,email,' . Auth::id(),
+                'country' => 'nullable|string|max:255',
+                'city' => 'nullable|string|max:255',
+            ]);
+
+            $user = Auth::user();
+
+            // Update fields
+            $user->first_name = $validated['first_name'] ?? $user->first_name;
+            $user->last_name = $validated['last_name'] ?? $user->last_name;
+            $user->phone = $validated['phone'] ?? $user->phone;
+            $user->email = $validated['email'] ?? $user->email;
+            $user->country = $validated['country'] ?? $user->country;
+            $user->city = $validated['city'] ?? $user->city;
+
+
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully.',
+                'data' => [
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'phone' => $user->phone,
+                    'email' => $user->email,
+                    'country' => $user->country,
+                    'city' => $user->city,
+                    
+                ]
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error updating user profile: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
