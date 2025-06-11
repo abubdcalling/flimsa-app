@@ -68,6 +68,38 @@ class SettingController extends Controller
         }
     }
 
+    public function ShowsForUser()
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login first.'
+            ], 401);
+        }
+
+        try {
+            $user = Auth::user();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User profile fetched successfully.',
+                'data' => [
+                    'username' => $user->username,
+                    'first_name' => $user->first_name,
+                    'profile_pic' => $user->profile_pic,
+                ]
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error fetching user profile: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function storeOrUpdateForUser(Request $request)
     {
         if (!Auth::check()) {
