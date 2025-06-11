@@ -88,135 +88,6 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'Password reset successful.']);
     }
 
-    // Register user
-    // public function register(Request $request)
-    // {
-    //     try {
-    //         $validator = Validator::make($request->all(), [
-    //             'name' => 'required|string|max:255',
-    //             'email' => 'required|email|unique:users',
-    //             'password' => 'required|string|min:6',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation failed.',
-    //                 'errors' => $validator->errors()
-    //             ], 400);
-    //         }
-
-    //         $user = User::create([
-    //             'name' => $request->name,
-    //             'email' => $request->email,
-    //             'password' => Hash::make($request->password),
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'User registered successfully',
-    //             'data' => $user
-    //         ], 201);
-    //     } catch (Exception $e) {
-    //         Log::error('Error registering user: ' . $e->getMessage());
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to register user.'
-    //         ], 500);
-    //     }
-    // }
-
-    // public function register(Request $request)
-    // {
-    //     try {
-    //         $validator = Validator::make($request->all(), [
-    //             'first_name' => 'required|string|max:255',
-    //             'last_name' => 'required|string|max:255',
-    //             'phone' => 'required|string|max:20',
-    //             'company_name' => 'required|string|max:255',
-    //             'email' => 'required|email|unique:users,email',
-    //             'password' => 'required|string|min:6|same:confirm_password',
-    //             'confirm_password' => 'required|string|min:6',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation failed.',
-    //                 'errors' => $validator->errors()
-    //             ], 400);
-    //         }
-
-    //         $user = User::create([
-    //             'first_name' => $request->first_name,
-    //             'last_name' => $request->last_name,
-    //             'phone' => $request->phone,
-    //             'company_name' => $request->company_name,
-    //             'email' => $request->email,
-    //             'password' => Hash::make($request->password),
-    //         ]);
-
-    //         // Generate JWT token
-    //         $token = JWTAuth::fromUser($user);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'User registered successfully',
-    //             'token' => $token,
-    //             'data' => $user
-    //         ], 201);
-    //     } catch (Exception $e) {
-    //         Log::error('Error registering user: ' . $e->getMessage());
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to register user.',
-    //             'error' => $e->getMessage()  // For debugging; remove in production
-    //         ], 500);
-    //     }
-    // }
-
-    // Login user and get token
-    // public function login(Request $request)
-    // {
-    //     try {
-    //         $validator = Validator::make($request->all(), [
-    //             'email' => 'required|email',
-    //             'password' => 'required|string',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation failed.',
-    //                 'errors' => $validator->errors()
-    //             ], 400);
-    //         }
-
-    //         $credentials = $request->only('email', 'password');
-
-    //         if (!$token = JWTAuth::attempt($credentials)) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Unauthorized. Invalid credentials.'
-    //             ], 401);
-    //         }
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Login successful',
-    //             'token' => $token
-    //         ]);
-    //     } catch (Exception $e) {
-    //         Log::error('Login error: ' . $e->getMessage());
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Login failed.'
-    //         ], 500);
-    //     }
-    // }
-
-
-
     public function register(Request $request)
     {
         try {
@@ -235,26 +106,31 @@ class AuthController extends Controller
                 ], 400);
             }
 
+            $validated = $validator->validated();
+
             $user = User::create([
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'phone' => $request->phone,
-                'company_name' => $request->company_name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'first_name' => $validated['first_name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'User registered successfully',
-                'data' => $user
+                'data' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'email' => $user->email,
+                    // 'roles' => $user->role, // Assuming you have a 'role' field in your User model
+                ]
             ], 201);
         } catch (Exception $e) {
             Log::error('Error registering user: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to register user.',
-                'error' => $e->getMessage()  // Remove in production
+                'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage()
             ], 500);
         }
     }
@@ -287,9 +163,10 @@ class AuthController extends Controller
             // Get the authenticated user
             $user = JWTAuth::user();
 
-            // Check user role - adjust field name and values as per your User model
-            $allowedRoles = ['admin', 'user', 'editor', 'author'];
-            if (!in_array($user->role, $allowedRoles)) {
+            // Check if user's role is allowed
+            $allowedRoles = ['admin', 'subscriber'];
+
+            if (!in_array($user->roles, $allowedRoles)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized. Role not allowed.'
@@ -303,16 +180,15 @@ class AuthController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
-                    'role' => $user->role,
-                    // 'name' => $user->name,  // if you want to return the user name
+                    'role' => $user->roles,
                 ],
             ]);
         } catch (Exception $e) {
-            Log::error('Error registering user: ' . $e->getMessage());
+            Log::error('Login error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to register user.',
-                'error' => $e->getMessage()  // <== This will show you the actual reason
+                'message' => 'Login failed.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

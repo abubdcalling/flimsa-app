@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\GenreController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +39,11 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
+
+
+        Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
+        Route::post('info', [SettingController::class, 'storeOrUpdate']);
+        Route::get('info', [SettingController::class, 'index']);
     });
 
     Route::middleware('role:subscriber')->group(function () {
