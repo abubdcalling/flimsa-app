@@ -113,7 +113,7 @@ class SettingController extends Controller
             $validated = $request->validate([
                 'username' => 'nullable|string|max:255|unique:users,username,' . Auth::id(),
                 'first_name' => 'nullable|string|max:255',
-                'profile_pic' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10248',
+                'profile_pic' => 'nullable|image',
             ]);
 
             $user = Auth::user();
