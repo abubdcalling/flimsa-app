@@ -6,45 +6,23 @@ use App\Models\Genre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-    use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\ValidationException;
 
 class GenreController extends Controller
 {
-    public function index(Request $request)
+
+    public function index()
     {
-        $validated = $request->validate([
-            'paginate_count' => 'nullable|integer|min:1',
-        ]);
-
-        $paginate_count = $validated['paginate_count'] ?? 8;
-
         try {
-            $genres = Genre::withCount('contents')
-                ->select('id', 'name', 'thumbnail', 'created_at')
-                ->latest()
-                ->paginate($paginate_count);
-
-            // Format each genre for response
-            $data = $genres->getCollection()->transform(function ($genre) {
-                return [
-                    'name' => $genre->name,
-                    'thumbnail' => $genre->thumbnail,
-                    'date' => $genre->created_at->format('Y-m-d'),
-                    'total_content' => $genre->contents_count,
-                ];
-            });
+            $genres = Genre::withCount('contents')->get();
 
             return response()->json([
                 'success' => true,
-                'current_page' => $genres->currentPage(),
-                'per_page' => $genres->perPage(),
-                'data' => $data,
-                'total_genres' => $genres->total(),
-                'total_pages' => $genres->lastPage(),
+                'data' => $genres,
                 'message' => 'Genres retrieved successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching genres: ' . $e->getMessage());
+            \Log::error('Error fetching genres: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -66,8 +44,6 @@ class GenreController extends Controller
             ], 404);
         }
     }
-
-
 
     public function store(Request $request)
     {

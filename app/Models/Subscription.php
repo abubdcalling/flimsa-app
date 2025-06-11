@@ -9,7 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Subscription extends Model
 {
     use HasFactory;
-    protected $fillable = ['plan_name', 'price', 'description'];
+    protected $fillable = ['plan_name', 'price', 'description','features'];
+
+    protected $casts = [
+        'features' => 'array',
+    ];
 
     public function users(): HasMany
     {
