@@ -35,70 +35,64 @@ class ContentController extends Controller
 
     // POST /api/contents
     public function store(Request $request)
-    {
-        // dd(env('CLOUDINARY_URL'));
+{
+    $validated = $request->validate([
+        'video1'       => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
+        'title'        => 'required|string',
+        'description'  => 'required|string',
+        'publish'      => 'required|in:public,private,schedule',
+        'schedule'     => 'nullable|date',
+        'genre_id'     => 'required|exists:genres,id',
+        'image'        => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    ]);
 
-        $validated = $request->validate([
-            'video1'       => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
-            'title'        => 'required|string',
-            'description'  => 'required|string',
-            'publish'      => 'required|in:public,private,schedule',
-            'schedule'     => 'nullable|date',
-            'genre_id'     => 'required|exists:genres,id',
-            'image'        => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
-        try {
-            // Handle video upload safely
-            $videoName = null;
-            if ($request->hasFile('video1')) {
-                $videoFile = $request->file('video1');
-
-                \Cloudinary::config([
-                    'cloud_name' => 'drdztqgcx',
-                    'api_key'    => '397762455993245',
-                    'api_secret' => 'LN0hDY5NtauBzN5P-hnj093ld20',
-                    'secure'     => true,
-                ]);
-
-                $videoName = Cloudinary::uploadVideo($videoFile->getRealPath(), [
+    try {
+        // Upload video to Cloudinary
+        $videoName = null;
+        if ($request->hasFile('video1')) {
+            $videoFile = $request->file('video1');
+            $uploadedVideo = Cloudinary::uploadVideo(
+                $videoFile->getRealPath(),
+                [
                     'folder' => 'Contents/Videos',
                     'resource_type' => 'video'
-                ])->getSecurePath();
-            }
-
-
-            // Handle image upload safely
-            $imageName = null;
-            if ($request->hasFile('image')) {
-                $imageFile = $request->file('image');
-                $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
-                $imageFile->move(public_path('uploads/Contents'), $imageName);
-            }
-
-            $content = Content::create([
-                'video1'      => $videoName,
-                'title'       => $validated['title'],
-                'description' => $validated['description'],
-                'publish'     => $validated['publish'],
-                'schedule'    => $validated['publish'] === 'schedule' ? $validated['schedule'] : now(),
-                'genre_id'    => $validated['genre_id'],
-                'image'       => $imageName,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Content created successfully.',
-                'data'    => $content,
-            ], 201);
-        } catch (\Exception $e) {
-            Log::error('Failed to store content: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create content.',
-            ], 500);
+                ]
+            );
+            $videoName = $uploadedVideo->getSecurePath();
         }
+
+        // Upload image to local storage
+        $imageName = null;
+        if ($request->hasFile('image')) {
+            $imageFile = $request->file('image');
+            $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
+            $imageFile->move(public_path('uploads/Contents'), $imageName);
+        }
+
+        // Store content
+        $content = Content::create([
+            'video1'      => $videoName,
+            'title'       => $validated['title'],
+            'description' => $validated['description'],
+            'publish'     => $validated['publish'],
+            'schedule'    => $validated['publish'] === 'schedule' ? $validated['schedule'] : now(),
+            'genre_id'    => $validated['genre_id'],
+            'image'       => $imageName,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Content created successfully.',
+            'data'    => $content,
+        ], 201);
+    } catch (\Exception $e) {
+        Log::error('Failed to store content: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create content.',
+        ], 500);
     }
+}
 
 
     // GET /api/contents/{id}
