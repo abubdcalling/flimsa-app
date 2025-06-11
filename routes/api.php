@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\GenreController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,7 @@ Route::middleware('auth:api')->group(function () {
 
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
+        Route::apiResource('subscriptions', SubscriptionController::class);
 
         Route::prefix('settings')->group(function () {
 
@@ -49,7 +51,9 @@ Route::middleware('auth:api')->group(function () {
     });
     
 
-    Route::middleware('role:subscriber')->group(function () {});
+    Route::middleware('role:subscriber')->group(function () {
+
+    });
 });
 
 
