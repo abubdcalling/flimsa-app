@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Content;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
 
 class ContentController extends Controller
 {
@@ -49,8 +51,13 @@ class ContentController extends Controller
             $videoName = null;
             if ($request->hasFile('video1')) {
                 $videoFile = $request->file('video1');
-                $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
-                $videoFile->move(public_path('uploads/Videos'), $videoName);
+                // $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
+                // $videoFile->move(public_path('uploads/Videos'), $videoName);
+                $videoName = Cloudinary::uploadVideo($videoFile->getRealPath(), [
+                    'folder' => 'Contents/Videos',
+                    'resource_type' => 'video'
+                ])->getSecurePath();
+
             }
 
             // Handle image upload safely
