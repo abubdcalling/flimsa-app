@@ -10,8 +10,5 @@ class Genre extends Model
     use HasFactory;
     protected $fillable = ['name', 'thumbnail'];
 
-    public function contents(): HasMany
-    {
-        return $this->hasMany(Content::class);
-    }
+    
 }

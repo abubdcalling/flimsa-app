@@ -6,6 +6,7 @@ use App\Models\Genre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+    use Illuminate\Validation\ValidationException;
 
 class GenreController extends Controller
 {
@@ -52,8 +53,6 @@ class GenreController extends Controller
         }
     }
 
-
-
     public function show($id)
     {
         try {
@@ -68,6 +67,8 @@ class GenreController extends Controller
         }
     }
 
+
+
     public function store(Request $request)
     {
         try {
@@ -76,7 +77,6 @@ class GenreController extends Controller
                 'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             ]);
 
-            $imageName = null;
             if ($request->hasFile('thumbnail')) {
                 $file = $request->file('thumbnail');
                 $imageName = time() . '_genre_thumbnail.' . $file->getClientOriginalExtension();
@@ -91,7 +91,15 @@ class GenreController extends Controller
                 'message' => 'Genre created successfully',
                 'data' => $genre
             ], 201);
+        } catch (ValidationException $e) {
+            // Handle validation errors separately
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
+            // Handle other exceptions
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create genre',
@@ -99,7 +107,6 @@ class GenreController extends Controller
             ], 500);
         }
     }
-
 
     public function update(Request $request, $id)
     {

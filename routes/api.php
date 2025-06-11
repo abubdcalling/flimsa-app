@@ -43,6 +43,8 @@ Route::middleware('auth:api')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
             Route::post('info', [SettingController::class, 'storeOrUpdate']);
             Route::get('info', [SettingController::class, 'index']);
+
+            
             
         });
     });

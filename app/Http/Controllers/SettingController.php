@@ -97,8 +97,6 @@ class SettingController extends Controller
             $user->country = $validated['country'] ?? $user->country;
             $user->city = $validated['city'] ?? $user->city;
 
-
-
             $user->save();
 
             return response()->json([
@@ -111,7 +109,6 @@ class SettingController extends Controller
                     'email' => $user->email,
                     'country' => $user->country,
                     'city' => $user->city,
-                    
                 ]
             ]);
         } catch (Exception $e) {
@@ -123,5 +120,29 @@ class SettingController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function index(Request $request)
+    {
+        $user = auth('api')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'phone' => $user->phone,
+                'email' => $user->email,
+                'country' => $user->country,
+                'city' => $user->city,
+            ],
+        ]);
     }
 }
