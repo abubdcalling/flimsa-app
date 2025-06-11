@@ -5,6 +5,7 @@ use App\Http\Controllers\ContentController;
 use App\Http\Controllers\GenreController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\SubscriptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -52,7 +53,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
 
         
-        Route::post('/checkout', [StripeController::class, 'createPaymentIntent']);
+        Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
 
     });
 });
