@@ -30,4 +30,8 @@ return [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],
+    'cloudinary' => [
+        'cloud_url' => env('CLOUDINARY_URL'),
+    ],
+
 ];
