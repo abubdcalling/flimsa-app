@@ -29,25 +29,23 @@ Route::post('password/email', [AuthController::class, 'sendResetOTP']);
 Route::post('password/verify-otp', [AuthController::class, 'verifyResetOTP'])->name('password.verify-otp');
 Route::post('password/reset', [AuthController::class, 'passwordReset'])->name('password.reset');
 
-
-
 Route::middleware('auth:api')->group(function () {
-
     Route::get('me', [AuthController::class, 'me']);
     Route::post('logout', [AuthController::class, 'logout']);
 
     Route::middleware('role:admin')->group(function () {
+
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
 
+        Route::prefix('settings')->group(function () {
 
-        Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
-        Route::post('info', [SettingController::class, 'storeOrUpdate']);
-        Route::get('info', [SettingController::class, 'index']);
+            Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
+            Route::post('info', [SettingController::class, 'storeOrUpdate']);
+            Route::get('info', [SettingController::class, 'index']);
+            
+        });
     });
 
-    Route::middleware('role:subscriber')->group(function () {
-
-
-    });
+    Route::middleware('role:subscriber')->group(function () {});
 });
