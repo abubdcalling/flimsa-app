@@ -60,7 +60,7 @@ class ContentController extends Controller
             //     ]
             // );
             // $videoName = $uploadedVideo->getSecurePath();
-            $videoName = time() . '_content_image.' . $videoFile->getClientOriginalExtension();
+            $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
             $videoFile->move(public_path('uploads/Videos'), $videoName);
         }
 
