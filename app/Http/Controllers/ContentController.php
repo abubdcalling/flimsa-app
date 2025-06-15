@@ -51,14 +51,17 @@ class ContentController extends Controller
         $videoName = null;
         if ($request->hasFile('video1')) {
             $videoFile = $request->file('video1');
-            $uploadedVideo = Cloudinary::uploadVideo(
-                $videoFile->getRealPath(),
-                [
-                    'folder' => 'Contents/Videos',
-                    'resource_type' => 'video'
-                ]
-            );
-            $videoName = $uploadedVideo->getSecurePath();
+            // dd($videoFile);
+            // $uploadedVideo = Cloudinary::uploadVideo(
+            //     $videoFile->getRealPath(),
+            //     [
+            //         'folder' => 'Contents/Videos',
+            //         'resource_type' => 'video'
+            //     ]
+            // );
+            // $videoName = $uploadedVideo->getSecurePath();
+            $videoName = time() . '_content_image.' . $videoFile->getClientOriginalExtension();
+            $videoFile->move(public_path('uploads/Videos'), $videoName);
         }
 
         // Upload image to local storage
