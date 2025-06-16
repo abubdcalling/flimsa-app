@@ -65,7 +65,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', [ContentController::class, 'showsDashboard']);
     });
 
-    Route::middleware(['role:subscriber'])->group(function () {
+    Route::middleware(['auth:api','role:subscriber'])->group(function () {
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
