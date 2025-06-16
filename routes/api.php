@@ -49,7 +49,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware(['auth:api','role:admin'])->group(function () {
-        
+
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
         Route::apiResource('subscriptions', SubscriptionController::class);
@@ -65,7 +65,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', [ContentController::class, 'showsDashboard']);
     });
 
-    Route::middleware(['auth:api','role:subscriber'])->group(function () {
+    Route::middleware(['role:subscriber'])->group(function () {
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
