@@ -24,7 +24,6 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'profile_pic',
-        
     ];
 
     /**
@@ -74,5 +73,8 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
-
+    public function likedContents()
+    {
+        return $this->belongsToMany(Content::class, 'likes');
+    }
 }

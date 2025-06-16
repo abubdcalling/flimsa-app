@@ -3,21 +3,59 @@
 namespace App\Http\Controllers;
 
 use App\Models\Content;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ContentController extends Controller
 {
     // GET /api/contents
+
     public function index(Request $request)
     {
         try {
-            $contents = Content::with('genres')
-                ->select('id', 'video1', 'title', 'description', 'publish', 'schedule', 'genre_id', 'image', 'created_at')
+            $paginateCount = $request->get('paginate_count', 10);
+            $userId = $request->user()->id ?? null;
+
+            // Group total likes by content_id where is_liked is true
+            $likesGrouped = DB::table('likes')
+                ->select('content_id', DB::raw('COUNT(*) as total_likes'))
+                ->where('is_liked', true)
+                ->groupBy('content_id')
+                ->pluck('total_likes', 'content_id');  // [content_id => total_likes]
+
+            // Fetch paginated contents with genre relationship
+            $contents = Content::with('genres')  // genres contains genre name
+                ->select('id', 'video1', 'title', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
-                ->paginate($request->get('paginate_count', 10));
+                ->paginate($paginateCount);
+
+            $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped) {
+                // Rename view_count to total_view
+                $content->total_view = $content->view_count;
+                unset($content->view_count);
+
+                // Assign total_likes
+                $content->total_likes = (int) ($likesGrouped[$content->id] ?? 0);
+
+                // Pull genre_name from related genre table
+                $content->genre_name = optional($content->genres)->name;
+
+                // Remove the genres object if only genre_name is needed
+                unset($content->genres);
+
+                // Add is_liked only if user is logged in
+                if ($userId) {
+                    $content->is_liked = $content
+                        ->likes()
+                        ->where('user_id', $userId)
+                        ->where('is_liked', true)
+                        ->exists();
+                }
+
+                return $content;
+            });
 
             return response()->json([
                 'success' => true,
@@ -26,6 +64,7 @@ class ContentController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching content list: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch contents.',
@@ -33,70 +72,97 @@ class ContentController extends Controller
         }
     }
 
-    // POST /api/contents
-    public function store(Request $request)
-{
-    $validated = $request->validate([
-        'video1'       => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
-        'title'        => 'required|string',
-        'description'  => 'required|string',
-        'publish'      => 'required|in:public,private,schedule',
-        'schedule'     => 'nullable|date',
-        'genre_id'     => 'required|exists:genres,id',
-        'image'        => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    ]);
+    public function updateLike(Request $request, Content $content)
+    {
+        $user = $request->user();
 
-    try {
-        // Upload video to Cloudinary
-        $videoName = null;
-        if ($request->hasFile('video1')) {
-            $videoFile = $request->file('video1');
-            // dd($videoFile);
-            // $uploadedVideo = Cloudinary::uploadVideo(
-            //     $videoFile->getRealPath(),
-            //     [
-            //         'folder' => 'Contents/Videos',
-            //         'resource_type' => 'video'
-            //     ]
-            // );
-            // $videoName = $uploadedVideo->getSecurePath();
-            $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
-            $videoFile->move(public_path('uploads/Videos'), $videoName);
+        // Check if user already liked the content
+        $existingLike = $content->likes()->where('user_id', $user->id)->first();
+
+        if ($existingLike) {
+            // Unlike
+            $existingLike->delete();
+            $isLiked = false;
+        } else {
+            // Like
+            $content->likes()->create([
+                'user_id' => $user->id,
+                // 'is_liked' => 1,
+            ]);
+            $isLiked = true;
+            $content->likes()->where('user_id', $user->id)->update(['is_liked' => true]);
         }
-
-        // Upload image to local storage
-        $imageName = null;
-        if ($request->hasFile('image')) {
-            $imageFile = $request->file('image');
-            $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
-            $imageFile->move(public_path('uploads/Contents'), $imageName);
-        }
-
-        // Store content
-        $content = Content::create([
-            'video1'      => $videoName,
-            'title'       => $validated['title'],
-            'description' => $validated['description'],
-            'publish'     => $validated['publish'],
-            'schedule'    => $validated['publish'] === 'schedule' ? $validated['schedule'] : now(),
-            'genre_id'    => $validated['genre_id'],
-            'image'       => $imageName,
-        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Content created successfully.',
-            'data'    => $content,
-        ], 201);
-    } catch (\Exception $e) {
-        Log::error('Failed to store content: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to create content.',
-        ], 500);
+            'is_liked' => $isLiked,
+            'total_likes' => $content->likes()->count(),
+        ]);
     }
-}
 
+    // POST /api/contents
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'video1' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
+            'title' => 'required|string',
+            'description' => 'required|string',
+            'publish' => 'required|in:public,private,schedule',
+            'schedule' => 'nullable|date',
+            'genre_id' => 'required|exists:genres,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        try {
+            // Upload video to Cloudinary
+            $videoName = null;
+            if ($request->hasFile('video1')) {
+                $videoFile = $request->file('video1');
+                // dd($videoFile);
+                // $uploadedVideo = Cloudinary::uploadVideo(
+                //     $videoFile->getRealPath(),
+                //     [
+                //         'folder' => 'Contents/Videos',
+                //         'resource_type' => 'video'
+                //     ]
+                // );
+                // $videoName = $uploadedVideo->getSecurePath();
+                $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
+                $videoFile->move(public_path('uploads/Videos'), $videoName);
+            }
+
+            // Upload image to local storage
+            $imageName = null;
+            if ($request->hasFile('image')) {
+                $imageFile = $request->file('image');
+                $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
+                $imageFile->move(public_path('uploads/Contents'), $imageName);
+            }
+
+            // Store content
+            $content = Content::create([
+                'video1' => $videoName,
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'publish' => $validated['publish'],
+                'schedule' => $validated['schedule'] ,//=== 'schedule' ? $validated['schedule'] : now(),
+                'genre_id' => $validated['genre_id'],
+                'image' => $imageName,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Content created successfully.',
+                'data' => $content,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to store content: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create content.',
+            ], 500);
+        }
+    }
 
     // GET /api/contents/{id}
     public function show($id)
@@ -110,64 +176,66 @@ class ContentController extends Controller
             ], 404);
         }
 
+        // Increment view_count
+        $content->increment('view_count');
+
         return response()->json([
             'success' => true,
             'data' => $content,
         ]);
     }
 
-    // PUT /api/contents/{id}
     public function update(Request $request, $id)
     {
-        $content = Content::find($id);
-
-        if (!$content) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Content not found.',
-            ], 404);
-        }
-
         $validated = $request->validate([
-            'video1'       => 'nullable|file|mimes:mp4,mov,avi,wmv|max:204800',
-            'title'        => 'sometimes|required|string',
-            'description'  => 'sometimes|required|string',
-            'publish'      => 'sometimes|required|in:public,private,schedule',
-            'schedule'     => 'nullable|date',
-            'genre_id'     => 'sometimes|required|exists:genres,id',
-            'image'        => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'video1' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
+            'title' => 'required|string',
+            'description' => 'required|string',
+            'publish' => 'required|in:public,private,schedule',
+            'schedule' => 'nullable|date',
+            'genre_id' => 'required|exists:genres,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         try {
-            if ($request->hasFile('video1')) {
-                if ($content->video1 && file_exists(public_path('uploads/Videos/' . $content->video1))) {
-                    unlink(public_path('uploads/Videos/' . $content->video1));
-                }
+            $content = Content::findOrFail($id);
 
-                $videoName = time() . '_video.' . $request->file('video1')->getClientOriginalExtension();
-                $request->file('video1')->move(public_path('uploads/Videos'), $videoName);
+            // Handle video upload
+            if ($request->hasFile('video1')) {
+                $videoFile = $request->file('video1');
+                $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
+                $videoFile->move(public_path('uploads/Videos'), $videoName);
+
+                // Optionally delete old video file from local (if needed)
+                // @unlink(public_path('uploads/Videos/' . $content->video1));
+
                 $content->video1 = $videoName;
             }
 
+            // Handle image upload
             if ($request->hasFile('image')) {
-                if ($content->image && file_exists(public_path('uploads/Contents/' . $content->image))) {
-                    unlink(public_path('uploads/Contents/' . $content->image));
-                }
+                $imageFile = $request->file('image');
+                $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
+                $imageFile->move(public_path('uploads/Contents'), $imageName);
 
-                $imageName = time() . '_image.' . $request->file('image')->getClientOriginalExtension();
-                $request->file('image')->move(public_path('uploads/Contents'), $imageName);
+                // Optionally delete old image file from local (if needed)
+                // @unlink(public_path('uploads/Contents/' . $content->image));
+
                 $content->image = $imageName;
             }
 
-            $content->update(array_merge(
-                $validated,
-                ['schedule' => $validated['publish'] === 'schedule' ? $validated['schedule'] : $content->schedule]
-            ));
+            // Update remaining fields
+            $content->title = $validated['title'];
+            $content->description = $validated['description'];
+            $content->publish = $validated['publish'];
+            $content->schedule = $validated['publish'] === 'schedule' ? $validated['schedule'] : now();
+            $content->genre_id = $validated['genre_id'];
+            $content->save();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Content updated successfully.',
-                'data'    => $content,
+                'data' => $content,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to update content: ' . $e->getMessage());
@@ -179,32 +247,40 @@ class ContentController extends Controller
     }
 
     // DELETE /api/contents/{id}
+
     public function destroy($id)
     {
-        $content = Content::find($id);
-
-        if (!$content) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Content not found.',
-            ], 404);
-        }
-
         try {
-            if ($content->video1 && file_exists(public_path('uploads/Videos/' . $content->video1))) {
-                unlink(public_path('uploads/Videos/' . $content->video1));
+            $content = Content::findOrFail($id);
+
+            // Delete video file if exists
+            if (!empty($content->video1)) {
+                $videoPath = public_path('uploads/Videos/' . $content->video1);
+                if (file_exists($videoPath)) {
+                    unlink($videoPath);
+                }
             }
 
-            if ($content->image && file_exists(public_path('uploads/Contents/' . $content->image))) {
-                unlink(public_path('uploads/Contents/' . $content->image));
+            // Delete image file if exists
+            if (!empty($content->image)) {
+                $imagePath = public_path('uploads/Contents/' . $content->image);
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
             }
 
+            // Delete content from DB
             $content->delete();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Content deleted successfully.',
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Content not found.',
+            ], 404);
         } catch (\Exception $e) {
             Log::error('Failed to delete content: ' . $e->getMessage());
             return response()->json([
