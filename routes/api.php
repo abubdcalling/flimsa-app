@@ -67,4 +67,5 @@ Route::middleware('auth:api')->group(function () {
     });
 });
 
+
 Route::get('home', [GenreController::class, 'Home']);
