@@ -18,6 +18,26 @@ class GenreController extends Controller
             // Get pagination size from request or default to 10
             $perPage = $request->get('per_page', 10);
 
+            // Latest 1 content
+            $latestContent = Content::with('genres:id,name')
+                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->latest()
+                ->take(1)
+                ->get()
+                ->transform(function ($content) {
+                    return [
+                        'id' => $content->id,
+                        'title' => $content->title,
+                        'description' => $content->description,
+                        'image' => $content->image,
+                        'publish' => $content->publish,
+                        'schedule' => $content->schedule,
+                        'view_count' => $content->view_count,
+                        'created_at' => $content->created_at,
+                        'genre_name' => optional($content->genres)->name,
+                    ];
+                });
+
             // Fetch genre names
             $genreNames = Genre::pluck('name');
 
@@ -186,6 +206,7 @@ class GenreController extends Controller
                     'dramas' => $dramasContents,
                     'tv_shows' => $tvshows,
                     'weekly_top' => $weeklyTopContents,
+                     'latest' => $latestContent,
                 ]
             ]);
         } catch (\Exception $e) {
