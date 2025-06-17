@@ -34,22 +34,18 @@ Route::post('password/reset', [AuthController::class, 'passwordReset'])->name('p
 
 Route::get('home', [GenreController::class, 'Home']);
 
+ Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
+ Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
 
 
 Route::middleware('auth:api')->group(function () {
 
 
-    Route::get('me', [AuthController::class, 'me']);
-    Route::post('logout', [AuthController::class, 'logout']);
-
-    Route::apiResource('contents', ContentController::class);
+   
 
 
-    Route::middleware(['role:admin,subscriber'])->group(function () {
-        Route::get('contents/{content}', [ContentController::class, 'show']);
-        // Route::get('contents', [ContentController::class, 'index']);
-        // Route::get('genres', [GenreController::class, 'index']);
-    });
+
+    
 
     Route::middleware(['role:admin'])->group(function () {
 
@@ -75,7 +71,9 @@ Route::middleware('auth:api')->group(function () {
 
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
     });
+
+
 });
 
-        // Route::apiResource('contents', ContentController::class);
+
 
