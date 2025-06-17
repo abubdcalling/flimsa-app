@@ -13,9 +13,8 @@ class ContentController extends Controller
     // GET /api/contents
 
     public function index(Request $request)
-    {
+    { 
         try {
-            // return 0;
             $paginateCount = $request->get('paginate_count', 10);
             $userId = $request->user()->id ?? null;
 
@@ -24,7 +23,9 @@ class ContentController extends Controller
                 ->select('content_id', DB::raw('COUNT(*) as total_likes'))
                 ->where('is_liked', true)
                 ->groupBy('content_id')
-                ->pluck('total_likes', 'content_id');  // [content_id => total_likes]
+                ->pluck('total_likes', 'content_id');
+
+                 // [content_id => total_likes]
 
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
