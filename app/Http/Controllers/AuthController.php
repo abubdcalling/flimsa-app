@@ -182,7 +182,7 @@ class AuthController extends Controller
                 'success' => true,
                 'message' => 'Login successful.',
                 'token' => $token,
-                // 'refresh_token' => $refreshToken,
+                'refresh_token' => 'ariful',
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
