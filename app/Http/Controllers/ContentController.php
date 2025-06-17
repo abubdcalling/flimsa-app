@@ -15,6 +15,7 @@ class ContentController extends Controller
     public function index(Request $request)
     {
         try {
+            return 0;
             $paginateCount = $request->get('paginate_count', 10);
             $userId = $request->user()->id ?? null;
 
