@@ -42,13 +42,13 @@ Route::middleware('auth:api')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     Route::post('logout', [AuthController::class, 'logout']);
 
-    Route::middleware(['auth:api','role:admin,subscriber'])->group(function () {
+    Route::middleware(['role:admin,subscriber'])->group(function () {
         Route::get('contents/{content}', [ContentController::class, 'show']);
         // Route::get('contents', [ContentController::class, 'index']);
         // Route::get('genres', [GenreController::class, 'index']);
     });
 
-    Route::middleware(['auth:api','role:admin'])->group(function () {
+    Route::middleware(['role:admin'])->group(function () {
 
         Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
@@ -65,7 +65,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('dashboard', [ContentController::class, 'showsDashboard']);
     });
 
-    Route::middleware(['auth:api','role:subscriber'])->group(function () {
+    Route::middleware(['role:subscriber'])->group(function () {
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
