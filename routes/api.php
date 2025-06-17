@@ -42,6 +42,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     Route::post('logout', [AuthController::class, 'logout']);
 
+    Route::apiResource('contents', ContentController::class);
+
+
     Route::middleware(['role:admin,subscriber'])->group(function () {
         Route::get('contents/{content}', [ContentController::class, 'show']);
         // Route::get('contents', [ContentController::class, 'index']);
@@ -74,5 +77,5 @@ Route::middleware('auth:api')->group(function () {
     });
 });
 
-        Route::apiResource('contents', ContentController::class);
+        // Route::apiResource('contents', ContentController::class);
 
