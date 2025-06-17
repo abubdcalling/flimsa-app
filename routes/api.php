@@ -50,7 +50,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Route::middleware(['role:admin'])->group(function () {
 
-        Route::apiResource('contents', ContentController::class);
+        // Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class);
         Route::apiResource('subscriptions', SubscriptionController::class);
 
@@ -73,3 +73,6 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
     });
 });
+
+        Route::apiResource('contents', ContentController::class);
+
