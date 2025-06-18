@@ -297,6 +297,7 @@ class ContentController extends Controller
         try {
             $paginateCount = $request->get('paginate_count', 10);
             $searchGenreName = $request->get('genre');
+            $sortBy = $request->get('sort_by'); // options: 'popularity', 'latest'
 
             $query = Content::with('genres');
 
@@ -304,6 +305,13 @@ class ContentController extends Controller
                 $query->whereHas('genres', function ($q) use ($searchGenreName) {
                     $q->where('name', 'like', '%' . $searchGenreName . '%');
                 });
+            }
+
+            // Sorting logic
+            if ($sortBy === 'popularity') {
+                $query->orderByDesc('view_count');
+            } elseif ($sortBy === 'latest') {
+                $query->orderByDesc('created_at');
             }
 
             $contents = $query->orderBy('created_at', 'desc')->paginate($paginateCount);
