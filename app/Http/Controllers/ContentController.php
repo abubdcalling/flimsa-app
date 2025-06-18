@@ -7,13 +7,14 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ContentController extends Controller
 {
     // GET /api/contents
 
     public function index(Request $request)
-    { 
+    {
         try {
             $paginateCount = $request->get('paginate_count', 10);
             $userId = $request->user()->id ?? null;
@@ -25,7 +26,7 @@ class ContentController extends Controller
                 ->groupBy('content_id')
                 ->pluck('total_likes', 'content_id');
 
-                 // [content_id => total_likes]
+            // [content_id => total_likes]
 
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
@@ -103,51 +104,114 @@ class ContentController extends Controller
     }
 
     // POST /api/contents
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'video1' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
+    //         'title' => 'required|string',
+    //         'description' => 'required|string',
+    //         'publish' => 'required|in:public,private,schedule',
+    //         'schedule' => 'nullable|date',
+    //         'genre_id' => 'required|exists:genres,id',
+    //         'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    //     ]);
+
+    //     try {
+    //         // Upload video to Cloudinary
+    //         $videoName = null;
+    //         if ($request->hasFile('video1')) {
+    //             $videoFile = $request->file('video1');
+    //             // dd($videoFile);
+    //             // $uploadedVideo = Cloudinary::uploadVideo(
+    //             //     $videoFile->getRealPath(),
+    //             //     [
+    //             //         'folder' => 'Contents/Videos',
+    //             //         'resource_type' => 'video'
+    //             //     ]
+    //             // );
+    //             // $videoName = $uploadedVideo->getSecurePath();
+    //             $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
+    //             $videoFile->move(public_path('uploads/Videos'), $videoName);
+    //         }
+
+    //         // Upload image to local storage
+    //         $imageName = null;
+    //         if ($request->hasFile('image')) {
+    //             $imageFile = $request->file('image');
+    //             $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
+    //             $imageFile->move(public_path('uploads/Contents'), $imageName);
+    //         }
+
+    //         // Store content
+    //         $content = Content::create([
+    //             'video1' => $videoName,
+    //             'title' => $validated['title'],
+    //             'description' => $validated['description'],
+    //             'publish' => $validated['publish'],
+    //             'schedule' => $validated['schedule'] ,//=== 'schedule' ? $validated['schedule'] : now(),
+    //             'genre_id' => $validated['genre_id'],
+    //             'image' => $imageName,
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Content created successfully.',
+    //             'data' => $content,
+    //         ], 201);
+    //     } catch (\Exception $e) {
+    //         Log::error('Failed to store content: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to create content.',
+    //         ], 500);
+    //     }
+    // }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'video1' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
+            'video1' => 'nullable|file',
             'title' => 'required|string',
             'description' => 'required|string',
             'publish' => 'required|in:public,private,schedule',
             'schedule' => 'nullable|date',
             'genre_id' => 'required|exists:genres,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image',
         ]);
 
         try {
-            // Upload video to Cloudinary
             $videoName = null;
             if ($request->hasFile('video1')) {
                 $videoFile = $request->file('video1');
-                // dd($videoFile);
-                // $uploadedVideo = Cloudinary::uploadVideo(
-                //     $videoFile->getRealPath(),
-                //     [
-                //         'folder' => 'Contents/Videos',
-                //         'resource_type' => 'video'
-                //     ]
-                // );
-                // $videoName = $uploadedVideo->getSecurePath();
-                $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
-                $videoFile->move(public_path('uploads/Videos'), $videoName);
+                $videoPath = $videoFile->store('videos', 's3');
+
+                if (!$videoPath) {
+                    throw new \Exception('Failed to upload video to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($videoPath, 'public');
+                $videoName = Storage::disk('s3')->url($videoPath);
             }
 
-            // Upload image to local storage
             $imageName = null;
             if ($request->hasFile('image')) {
                 $imageFile = $request->file('image');
-                $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
-                $imageFile->move(public_path('uploads/Contents'), $imageName);
+                $imagePath = $imageFile->store('images', 's3');
+
+                if (!$imagePath) {
+                    throw new \Exception('Failed to upload image to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
+                $imageName = Storage::disk('s3')->url($imagePath);
             }
 
-            // Store content
             $content = Content::create([
                 'video1' => $videoName,
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'publish' => $validated['publish'],
-                'schedule' => $validated['schedule'] ,//=== 'schedule' ? $validated['schedule'] : now(),
+                'schedule' => $validated['publish'] === 'schedule' ? $validated['schedule'] : null,
                 'genre_id' => $validated['genre_id'],
                 'image' => $imageName,
             ]);
@@ -158,7 +222,11 @@ class ContentController extends Controller
                 'data' => $content,
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Failed to store content: ' . $e->getMessage());
+            Log::error('Failed to store content', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create content.',

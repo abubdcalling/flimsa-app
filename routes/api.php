@@ -33,6 +33,7 @@ Route::post('password/verify-otp', [AuthController::class, 'verifyResetOTP'])->n
 Route::post('password/reset', [AuthController::class, 'passwordReset'])->name('password.reset');
 
 Route::get('home', [GenreController::class, 'Home']);
+Route::get('search', [GenreController::class, 'SearchContent']);
 
  Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
  Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
@@ -41,7 +42,7 @@ Route::get('home', [GenreController::class, 'Home']);
 Route::middleware('auth:api')->group(function () {
 
 
-   
+        
 
 
 
