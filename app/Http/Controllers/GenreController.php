@@ -222,6 +222,7 @@ class GenreController extends Controller
     public function index()
     {
         $genres = Genre::withCount('contents')->get();
+        return response()->json($genres);
 
         // Optionally rename contents_count to total_content
         $genres->transform(function ($genre) {
