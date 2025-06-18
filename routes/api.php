@@ -43,7 +43,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware(['role:admin'])->group(function () {
 
-        Route::apiResource('contents', ContentController::class);
+        Route::apiResource('contents', ContentController::class)->except(['index']);
         Route::apiResource('genres', GenreController::class)->except(['Home','index']);
         Route::apiResource('subscriptions', SubscriptionController::class);
 
@@ -67,6 +67,8 @@ Route::middleware('auth:api')->group(function () {
 });
 
 Route::get('genres', [GenreController::class, 'index']);
+Route::get('contents', [ContentController::class, 'index']);
+
 
 
 

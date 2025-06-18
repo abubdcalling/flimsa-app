@@ -12,11 +12,14 @@ class ContentController extends Controller
 {
     // GET /api/contents
 
-    public function index(Request $request)
+   public function index(Request $request)
     { 
         try {
             $paginateCount = $request->get('paginate_count', 10);
             $userId = $request->user()->id ?? null;
+
+            $genreName = $request->get('genre_name');     // e.g., "Action"
+            $releaseYear = $request->get('release_year'); // e.g., 2023
 
             // Group total likes by content_id where is_liked is true
             $likesGrouped = DB::table('likes')
@@ -25,29 +28,33 @@ class ContentController extends Controller
                 ->groupBy('content_id')
                 ->pluck('total_likes', 'content_id');
 
-                 // [content_id => total_likes]
+            // Build the base query with genre relationship
+            $query = Content::with('genres')
+                ->select('id', 'video1', 'title', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at');
 
-            // Fetch paginated contents with genre relationship
-            $contents = Content::with('genres')  // genres contains genre name
-                ->select('id', 'video1', 'title', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
-                ->latest()
-                ->paginate($paginateCount);
+            // Filter by genre name (relationship)
+            if ($genreName) {
+                $query->whereHas('genres', function ($q) use ($genreName) {
+                    $q->where('name', 'like', "%{$genreName}%");
+                });
+            }
+
+            // Filter by release year (publish date)
+            if ($releaseYear) {
+                $query->whereYear('publish', $releaseYear);
+            }
+
+            // Paginate and transform
+            $contents = $query->latest()->paginate($paginateCount);
 
             $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped) {
-                // Rename view_count to total_view
                 $content->total_view = $content->view_count;
                 unset($content->view_count);
 
-                // Assign total_likes
                 $content->total_likes = (int) ($likesGrouped[$content->id] ?? 0);
-
-                // Pull genre_name from related genre table
                 $content->genre_name = optional($content->genres)->name;
-
-                // Remove the genres object if only genre_name is needed
                 unset($content->genres);
 
-                // Add is_liked only if user is logged in
                 if ($userId) {
                     $content->is_liked = $content
                         ->likes()
@@ -73,6 +80,7 @@ class ContentController extends Controller
             ], 500);
         }
     }
+
 
     public function updateLike(Request $request, Content $content)
     {
