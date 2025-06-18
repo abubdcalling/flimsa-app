@@ -297,6 +297,7 @@ class ContentController extends Controller
         try {
             $paginateCount = $request->get('paginate_count', 10);
             $searchGenreName = $request->get('genre');
+            $searchTitle = $request->get('title');
             $sortBy = $request->get('sort_by'); // options: 'popularity', 'latest'
 
             $query = Content::with('genres');
@@ -305,6 +306,10 @@ class ContentController extends Controller
                 $query->whereHas('genres', function ($q) use ($searchGenreName) {
                     $q->where('name', 'like', '%' . $searchGenreName . '%');
                 });
+            }
+
+            if ($searchTitle) {
+                $query->where('title', 'like', '%' . $searchTitle . '%');
             }
 
             // Sorting logic
