@@ -211,7 +211,7 @@ class ContentController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'publish' => $validated['publish'],
-                'schedule' => $validated['publish'] === 'schedule' ? $validated['schedule'] : null,
+                'schedule' => $validated['publish'],// === 'schedule' ? $validated['schedule'] : null,
                 'genre_id' => $validated['genre_id'],
                 'image' => $imageName,
             ]);
