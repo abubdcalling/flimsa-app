@@ -41,16 +41,10 @@ Route::get('home', [GenreController::class, 'Home']);
 Route::middleware('auth:api')->group(function () {
 
 
-   
-
-
-
-    
-
     Route::middleware(['role:admin'])->group(function () {
 
         Route::apiResource('contents', ContentController::class);
-        Route::apiResource('genres', GenreController::class);
+        Route::apiResource('genres', GenreController::class)->except(['Home','index']);
         Route::apiResource('subscriptions', SubscriptionController::class);
 
         Route::prefix('settings')->group(function () {
@@ -59,9 +53,6 @@ Route::middleware('auth:api')->group(function () {
             Route::get('info', [SettingController::class, 'index']);
         });
 
-        Route::get('all-genres', [GenreController::class, 'showsAllGenres']);
-        Route::get('all-contents', [GenreController::class, 'showsAllContents']);
-        Route::get('dashboard', [ContentController::class, 'showsDashboard']);
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
@@ -74,6 +65,9 @@ Route::middleware('auth:api')->group(function () {
 
 
 });
+
+Route::get('index', [GenreController::class, 'index']);
+
 
 
 
