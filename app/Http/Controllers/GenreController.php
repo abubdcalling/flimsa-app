@@ -221,7 +221,7 @@ class GenreController extends Controller
 
     public function index()
     {
-        $genres = Genre::pluck('name');
+        $genres = Genre::all();  // gets all columns and all records
 
         return response()->json($genres);
     }
