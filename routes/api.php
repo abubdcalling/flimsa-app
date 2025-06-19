@@ -67,9 +67,9 @@ Route::middleware('auth:api')->group(function () {
 
 });
 
-Route::get('genres', [GenreController::class, 'index']);
 Route::get('contents', [ContentController::class, 'index']);
 Route::get('allcontents', [ContentController::class, 'allcontents']);
+Route::get('genres', [GenreController::class, 'index']);
 
 
 
