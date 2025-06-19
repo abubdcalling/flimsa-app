@@ -13,7 +13,7 @@ class Content extends Model
 
     protected $fillable = [
         'video1', 'title', 'description', 'publish',
-        'schedule', 'genre_id', 'image'
+        'schedule', 'genre_id', 'image','view_count'
     ];
 
     // public function genres(): BelongsTo
@@ -39,5 +39,10 @@ class Content extends Model
     public function genres()
     {
         return $this->belongsTo(Genre::class, 'genre_id');
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(History::class);
     }
 }

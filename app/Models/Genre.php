@@ -14,10 +14,9 @@ class Genre extends Model
 
     // In Content.php
     public function contents()
-{
-    return $this->hasMany(Content::class, 'genre_id');
-}
+    {
+        return $this->hasMany(Content::class, 'genre_id');
+    }
 
-
-
+    
 }

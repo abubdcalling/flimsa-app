@@ -33,6 +33,9 @@ Route::post('password/verify-otp', [AuthController::class, 'verifyResetOTP'])->n
 Route::post('password/reset', [AuthController::class, 'passwordReset'])->name('password.reset');
 
 Route::get('home', [GenreController::class, 'Home']);
+Route::get('search', [GenreController::class, 'SearchContent']);
+Route::get('genres', [GenreController::class, 'index']);
+
 
  Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
  Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
@@ -43,9 +46,9 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware(['role:admin'])->group(function () {
 
-        Route::apiResource('contents', ContentController::class)->except(['index']);
+        Route::apiResource('contents', ContentController::class)->except(['index','show']);
         Route::apiResource('genres', GenreController::class)->except(['Home','index']);
-        Route::apiResource('subscriptions', SubscriptionController::class);
+        Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
 
         Route::prefix('settings')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
@@ -59,16 +62,18 @@ Route::middleware('auth:api')->group(function () {
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
+        Route::get('contents/{id}', [ContentController::class,'show']);
 
+        Route::get('/history', [ContentController::class, 'userHistory']);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
     });
 
 
 });
 
-Route::get('genres', [GenreController::class, 'index']);
 Route::get('contents', [ContentController::class, 'index']);
 Route::get('allcontents', [ContentController::class, 'allcontents']);
+Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 
 
 

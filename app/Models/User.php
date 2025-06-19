@@ -77,4 +77,14 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsToMany(Content::class, 'likes');
     }
+
+    public function histories()
+    {
+        return $this->hasMany(History::class);
+    }
+
+    public function watchedContents()
+    {
+        return $this->belongsToMany(Content::class, 'histories')->withTimestamps();
+    }
 }
