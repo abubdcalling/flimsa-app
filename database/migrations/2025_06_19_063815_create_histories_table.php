@@ -13,9 +13,8 @@ return new class extends Migration
     {
         Schema::create('histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('content_id')->constrained('contents')->onDelete('cascade');
-            $table->timestamps();
 
             // Optional: Prevent duplicate views (1 entry per user-content pair)
             $table->unique(['user_id', 'content_id']);
