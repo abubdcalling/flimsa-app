@@ -46,7 +46,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware(['role:admin'])->group(function () {
 
-        Route::apiResource('contents', ContentController::class)->except(['index']);
+        Route::apiResource('contents', ContentController::class)->except(['index','show']);
         Route::apiResource('genres', GenreController::class)->except(['Home','index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
 
@@ -62,7 +62,9 @@ Route::middleware('auth:api')->group(function () {
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
+        Route::get('contents/{id}', [ContentController::class,'show']);
 
+        Route::get('/history', [ContentController::class, 'userHistory']);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
     });
 

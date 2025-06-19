@@ -3,16 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\Content;
+use App\Models\History;
 use Carbon\Carbon;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ContentController extends Controller
 {
+    public function userHistory()
+    {
+        $histories = History::with('content')
+            ->where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User viewing history',
+            'data' => $histories
+        ]);
+    }
+
     public function upcomingContent(Request $request): JsonResponse
     {
         try {
@@ -128,70 +144,6 @@ class ContentController extends Controller
         ]);
     }
 
-    // POST /api/contents
-    // public function store(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'video1' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
-    //         'title' => 'required|string',
-    //         'description' => 'required|string',
-    //         'publish' => 'required|in:public,private,schedule',
-    //         'schedule' => 'nullable|date',
-    //         'genre_id' => 'required|exists:genres,id',
-    //         'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    //     ]);
-
-    //     try {
-    //         // Upload video to Cloudinary
-    //         $videoName = null;
-    //         if ($request->hasFile('video1')) {
-    //             $videoFile = $request->file('video1');
-    //             // dd($videoFile);
-    //             // $uploadedVideo = Cloudinary::uploadVideo(
-    //             //     $videoFile->getRealPath(),
-    //             //     [
-    //             //         'folder' => 'Contents/Videos',
-    //             //         'resource_type' => 'video'
-    //             //     ]
-    //             // );
-    //             // $videoName = $uploadedVideo->getSecurePath();
-    //             $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
-    //             $videoFile->move(public_path('uploads/Videos'), $videoName);
-    //         }
-
-    //         // Upload image to local storage
-    //         $imageName = null;
-    //         if ($request->hasFile('image')) {
-    //             $imageFile = $request->file('image');
-    //             $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
-    //             $imageFile->move(public_path('uploads/Contents'), $imageName);
-    //         }
-
-    //         // Store content
-    //         $content = Content::create([
-    //             'video1' => $videoName,
-    //             'title' => $validated['title'],
-    //             'description' => $validated['description'],
-    //             'publish' => $validated['publish'],
-    //             'schedule' => $validated['schedule'] ,//=== 'schedule' ? $validated['schedule'] : now(),
-    //             'genre_id' => $validated['genre_id'],
-    //             'image' => $imageName,
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Content created successfully.',
-    //             'data' => $content,
-    //         ], 201);
-    //     } catch (\Exception $e) {
-    //         Log::error('Failed to store content: ' . $e->getMessage());
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to create content.',
-    //         ], 500);
-    //     }
-    // }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -274,6 +226,16 @@ class ContentController extends Controller
         // Increment view_count
         $content->increment('view_count');
 
+        // Log user view if logged in
+        if (Auth::check()) {
+            History::updateOrCreate(
+                ['user_id' => Auth::id(), 'content_id' => $id],
+                ['updated_at' => now()]  // update timestamp if already exists
+            );
+        }
+
+        // return response()->json($content);
+
         return response()->json([
             'success' => true,
             'data' => $content,
@@ -283,7 +245,7 @@ class ContentController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'video1' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:4294967296',
+            'video1' => 'nullable|file',
             'title' => 'required|string',
             'description' => 'required|string',
             'publish' => 'required|in:public,private,schedule',
