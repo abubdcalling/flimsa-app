@@ -359,4 +359,47 @@ class ContentController extends Controller
             ], 500);
         }
     }
+
+    public function allcontents(Request $request)
+    {
+        try {
+            $paginateCount = $request->get('paginate_count', 10);
+            $searchGenreName = $request->get('genre');
+            $searchTitle = $request->get('title');
+            $sortBy = $request->get('sort_by'); // options: 'popularity', 'latest'
+
+            $query = Content::with('genres');
+
+            if ($searchGenreName) {
+                $query->whereHas('genres', function ($q) use ($searchGenreName) {
+                    $q->where('name', 'like', '%' . $searchGenreName . '%');
+                });
+            }
+
+            if ($searchTitle) {
+                $query->where('title', 'like', '%' . $searchTitle . '%');
+            }
+
+            // Sorting logic
+            if ($sortBy === 'popularity') {
+                $query->orderByDesc('view_count');
+            } elseif ($sortBy === 'latest') {
+                $query->orderByDesc('created_at');
+            }
+
+            $contents = $query->orderBy('created_at', 'desc')->paginate($paginateCount);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Content list retrieved successfully',
+                'data' => $contents,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve content list',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
