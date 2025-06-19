@@ -8,9 +8,32 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+    use Carbon\Carbon;
+    use Illuminate\Http\JsonResponse;
 
 class ContentController extends Controller
 {
+
+
+    public function upcomingContent(): JsonResponse
+    {
+        try {
+            $upcoming = Content::whereDate('schedule', '>', Carbon::today())->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Upcoming content retrieved successfully.',
+                'data' => $upcoming
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve upcoming content.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // GET /api/contents
 
     public function index(Request $request)
@@ -211,7 +234,7 @@ class ContentController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'publish' => $validated['publish'],
-                'schedule' => $validated['publish'],// === 'schedule' ? $validated['schedule'] : null,
+                'schedule' => $validated['publish'],  // === 'schedule' ? $validated['schedule'] : null,
                 'genre_id' => $validated['genre_id'],
                 'image' => $imageName,
             ]);
@@ -366,7 +389,7 @@ class ContentController extends Controller
             $paginateCount = $request->get('paginate_count', 10);
             $searchGenreName = $request->get('genre');
             $searchTitle = $request->get('title');
-            $sortBy = $request->get('sort_by'); // options: 'popularity', 'latest'
+            $sortBy = $request->get('sort_by');  // options: 'popularity', 'latest'
 
             $query = Content::with('genres');
 
