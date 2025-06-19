@@ -3,22 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Content;
+use Carbon\Carbon;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-    use Carbon\Carbon;
-    use Illuminate\Http\JsonResponse;
 
 class ContentController extends Controller
 {
-
-
-    public function upcomingContent(): JsonResponse
+    public function upcomingContent(Request $request): JsonResponse
     {
         try {
-            $upcoming = Content::whereDate('schedule', '>', Carbon::today())->get();
+            $perPage = $request->input('per_page', 10);  // default to 10 if not provided
+
+            $upcoming = Content::whereDate('schedule', '>', Carbon::today())
+                ->orderBy('schedule', 'asc')
+                ->paginate($perPage);
 
             return response()->json([
                 'status' => 'success',
