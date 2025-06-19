@@ -24,6 +24,25 @@ class UserSeeder extends Seeder
             'roles' => 'subscriber',
         ]);
 
-        
+        User::create([
+            'first_name' => 'Subscriber',
+            'email' => 'subscriber1@gmail.com',
+            'password' => Hash::make('password123'),
+            'roles' => 'subscriber',
+        ]);
+
+        User::create([
+            'first_name' => 'Subscriber',
+            'email' => 'subscriber2@gmail.com',
+            'password' => Hash::make('password123'),
+            'roles' => 'subscriber',
+        ]);
+
+        User::create([
+            'first_name' => 'Subscriber',
+            'email' => 'subscriber3@gmail.com',
+            'password' => Hash::make('password123'),
+            'roles' => 'subscriber',
+        ]);
     }
 }

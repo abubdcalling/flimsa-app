@@ -11,9 +11,9 @@ class ContentSeeder extends Seeder
 {
     public function run(): void
     {
-        // Make sure at least one genre exists
+        // Ensure genres exist (insert your fixed genres if none)
         if (Genre::count() === 0) {
-            Genre::create(['name' => 'General']);
+            $this->call(GenreSeeder::class);
         }
 
         $faker = \Faker\Factory::create();
@@ -22,7 +22,7 @@ class ContentSeeder extends Seeder
             $publishStatus = $faker->randomElement(['public', 'private', 'schedule']);
             $schedule = $publishStatus === 'schedule'
                 ? $faker->dateTimeBetween('+1 day', '+1 month')
-                : now();
+                : now(); // null if not scheduled
 
             Content::create([
                 'video1' => 'videos/' . Str::uuid() . '.mp4',
@@ -32,9 +32,9 @@ class ContentSeeder extends Seeder
                 'schedule' => $schedule,
                 'genre_id' => Genre::inRandomOrder()->first()->id,
                 'image' => 'images/' . Str::uuid() . '.jpg',
+                'view_count' => $faker->numberBetween(0, 10000),
                 'created_at' => now(),
                 'updated_at' => now(),
-                'view_count' => $faker->numberBetween(0, 10000),
             ]);
         }
     }

@@ -23,6 +23,12 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             ContentSeeder::class,
+            UserSeeder::class,
+            GenreSeeder::class,
+            ContentSeeder::class,
+            HistorySeeder::class,
+            LikeSeeder::class,
+            WishlistSeeder::class
         ]);
     }
 }
