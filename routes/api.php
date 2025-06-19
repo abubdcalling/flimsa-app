@@ -34,6 +34,8 @@ Route::post('password/reset', [AuthController::class, 'passwordReset'])->name('p
 
 Route::get('home', [GenreController::class, 'Home']);
 Route::get('search', [GenreController::class, 'SearchContent']);
+Route::get('genres', [GenreController::class, 'index']);
+
 
  Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
  Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
@@ -69,7 +71,6 @@ Route::middleware('auth:api')->group(function () {
 
 Route::get('contents', [ContentController::class, 'index']);
 Route::get('allcontents', [ContentController::class, 'allcontents']);
-Route::get('genres', [GenreController::class, 'index']);
 
 
 

@@ -18,6 +18,5 @@ class Genre extends Model
         return $this->hasMany(Content::class, 'genre_id');
     }
 
-    protected $table = 'genres';
-
+    
 }
