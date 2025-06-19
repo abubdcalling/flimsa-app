@@ -40,4 +40,9 @@ class Content extends Model
     {
         return $this->belongsTo(Genre::class, 'genre_id');
     }
+
+    public function histories()
+    {
+        return $this->hasMany(History::class);
+    }
 }
