@@ -15,18 +15,34 @@ use Illuminate\Support\Facades\Storage;
 
 class ContentController extends Controller
 {
-    public function userHistory()
-    {
-        $histories = History::with('content')
-            ->where('user_id', Auth::id())
-            ->orderBy('updated_at', 'desc')
-            ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User viewing history',
-            'data' => $histories
-        ]);
+    public function History(Request $request)
+    {
+        try {
+            // Get per_page value from query, default to 10
+            $perPage = $request->query('per_page', 10);
+
+            $contents = Content::whereIn('id', function ($query) {
+                $query
+                    ->select('content_id')
+                    ->from('histories')
+                    ->where('user_id', Auth::id());
+            })
+                ->orderBy('updated_at', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User viewed contents fetched successfully.',
+                'data' => $contents
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch user viewed contents.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function upcomingContent(Request $request): JsonResponse
@@ -374,7 +390,7 @@ class ContentController extends Controller
                 $query->orderByDesc('created_at');
             }
 
-            $contents = $query->orderBy('created_at', 'desc')->paginate($paginateCount);
+            $contents = $query->orderBy('view_count', 'desc')->paginate($paginateCount);
 
             return response()->json([
                 'success' => true,

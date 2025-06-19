@@ -7,6 +7,8 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\WishListController;
+use App\Models\WishList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +51,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('contents', ContentController::class)->except(['index','show']);
         Route::apiResource('genres', GenreController::class)->except(['Home','index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
+        // Route::get('contents/history', [ContentController::class, 'History']);
 
         Route::prefix('settings')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
@@ -64,7 +67,8 @@ Route::middleware('auth:api')->group(function () {
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
         Route::get('contents/{id}', [ContentController::class,'show']);
 
-        Route::get('/history', [ContentController::class, 'userHistory']);
+        Route::get('contents/history', [ContentController::class, 'History']);
+        Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
     });
 

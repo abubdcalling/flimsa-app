@@ -4,20 +4,19 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('histories', function (Blueprint $table) {
+        Schema::create('wish_lists', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('content_id')->constrained('contents')->onDelete('cascade');
+            $table->boolean('isWished')->default(false);
 
-            // Optional: Prevent duplicate views (1 entry per user-content pair)
-            $table->unique(['user_id', 'content_id']);
+            $table->unique(['user_id', 'content_id']);  // Optional: to prevent duplicates
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('histories');
+        Schema::dropIfExists('wish_lists');
     }
 };
