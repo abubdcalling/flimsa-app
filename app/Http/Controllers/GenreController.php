@@ -206,7 +206,7 @@ class GenreController extends Controller
                     'dramas' => $dramasContents,
                     'tv_shows' => $tvshows,
                     'weekly_top' => $weeklyTopContents,
-                     'latest' => $latestContent,
+                    'latest' => $latestContent,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -221,9 +221,8 @@ class GenreController extends Controller
 
     public function index()
     {
-        $genres = Genre::withCount('contents');
-        
-        
+        $genres = Genre::select('name')->get();
+
         return response()->json($genres);
     }
 
