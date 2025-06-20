@@ -19,13 +19,12 @@ class Video extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function device(): BelongsTo
-    {
-        return $this->belongsTo(Device::class);
-    }
+
 
     public function content(): BelongsTo
     {
         return $this->belongsTo(Content::class);
     }
+
+    
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\VideoTrackingController;
 use App\Http\Controllers\WishListController;
 use App\Models\WishList;
 use Illuminate\Http\Request;
@@ -70,6 +71,11 @@ Route::middleware('auth:api')->group(function () {
         Route::get('contents/history', [ContentController::class, 'History']);
         Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+
+        Route::apiResource('video-tracking', VideoTrackingController::class);     
+        Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class,'show']);     
+        Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class,'destroy']);     
+
     });
 
 
