@@ -28,7 +28,11 @@ class FileController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $path = $request->file('file')->store('public/image');
+        return response()->json([
+            'path' => $path,
+            'msg' =>'success'
+        ]);
     }
 
     /**
