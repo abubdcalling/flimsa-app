@@ -50,4 +50,9 @@ class Content extends Model
     {
         return $this->hasMany(Wishlist::class);
     }
+
+    public function genre()
+    {
+        return $this->belongsTo(Genre::class);
+    }
 }
