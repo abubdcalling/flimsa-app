@@ -161,24 +161,12 @@ class ContentController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'video1' => 'nullable|file',
-            'title' => 'required|string',
-            'description' => 'required|string',
-            'publish' => 'required|in:public,private,schedule',
-            'schedule' => 'nullable|date',
-            'genre_id' => 'required|exists:genres,id',
-            'image' => 'nullable|image',
-        ]);
-
         try {
             $videoName = null;
             if ($request->hasFile('video1')) {
-
                 $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
                 $path = $request->file('video1')->store('public/files');
-
-                $videoName= $awsPath . $path;      
+                $videoName = $awsPath . $path;
             }
 
             $imageName = null;
@@ -196,11 +184,11 @@ class ContentController extends Controller
 
             $content = Content::create([
                 'video1' => $videoName,
-                'title' => $validated['title'],
-                'description' => $validated['description'],
-                'publish' => $validated['publish'],
-                'schedule' => $validated['publish'],  // === 'schedule' ? $validated['schedule'] : null,
-                'genre_id' => $validated['genre_id'],
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'publish' => $request->input('publish'),
+                'schedule' => $request->input('publish') === 'schedule' ? $request->input('schedule') : null,
+                'genre_id' => $request->input('genre_id'),
                 'image' => $imageName,
             ]);
 
@@ -210,7 +198,7 @@ class ContentController extends Controller
                 'data' => $content,
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Failed to store content', [
+            \Log::error('Failed to store content', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
