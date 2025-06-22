@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\File;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
 {
@@ -28,9 +29,10 @@ class FileController extends Controller
      */
     public function store(Request $request)
     {
-        $path = $request->file('file')->store('public/image');
+        $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
+        $path = $request->file('file')->store('public/files');
         return response()->json([
-            'path' => $path,
+            'path' => $awsPath.$path,
             'msg' =>'success'
         ]);
     }
@@ -54,9 +56,34 @@ class FileController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, File $file)
+    public function update(Request $request, $id)
     {
-        //
+        $request->validate([
+            'file' => 'required|file',
+        ]);
+
+        $file = File::findOrFail($id);
+
+        // Delete the old file if it exists
+        if ($file->path && file_exists(public_path($file->path))) {
+            unlink(public_path($file->path));
+        }
+
+        // Store the new file manually
+        $uploadedFile = $request->file('file');
+        $destinationPath = 'files';
+        $fileName = uniqid() . '_' . $uploadedFile->getClientOriginalName();
+        $uploadedFile->move(public_path($destinationPath), $fileName);
+
+        $path = $destinationPath . '/' . $fileName;
+        $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
+        $file->path = $path;
+        $file->save();
+
+        return response()->json([
+            'path' => $awsPath . $path,
+            'msg' => 'File updated successfully',
+        ]);
     }
 
     /**
