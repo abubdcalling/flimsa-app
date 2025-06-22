@@ -31,6 +31,7 @@ class FileController extends Controller
     {
         $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
         $path = $request->file('file')->store('public/files');
+        
         return response()->json([
             'path' => $awsPath.$path,
             'msg' =>'success'

@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ContentController extends Controller
 {
-
     public function History(Request $request)
     {
         try {
@@ -175,15 +174,11 @@ class ContentController extends Controller
         try {
             $videoName = null;
             if ($request->hasFile('video1')) {
-                $videoFile = $request->file('video1');
-                $videoPath = $videoFile->store('videos', 's3');
 
-                if (!$videoPath) {
-                    throw new \Exception('Failed to upload video to S3');
-                }
+                $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
+                $path = $request->file('video1')->store('public/files');
 
-                Storage::disk('s3')->setVisibility($videoPath, 'public');
-                $videoName = Storage::disk('s3')->url($videoPath);
+                $videoName= $awsPath . $path;      
             }
 
             $imageName = null;
