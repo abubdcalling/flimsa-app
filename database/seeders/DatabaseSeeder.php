@@ -22,13 +22,13 @@ class DatabaseSeeder extends Seeder
         //  $this->call(UserSeeder::class);
 
         $this->call([
-            ContentSeeder::class,
             UserSeeder::class,
             GenreSeeder::class,
-            ContentSeeder::class,
-            HistorySeeder::class,
-            LikeSeeder::class,
-            WishlistSeeder::class
+            // ContentSeeder::class,
+            // ContentSeeder::class,
+            // HistorySeeder::class,
+            // LikeSeeder::class,
+            // WishlistSeeder::class
         ]);
     }
 }

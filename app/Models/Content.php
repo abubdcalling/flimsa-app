@@ -16,6 +16,8 @@ class Content extends Model
         'schedule', 'genre_id', 'image', 'view_count'
     ];
 
+    
+
     // public function genres(): BelongsTo
     // {
     //     return $this->belongsTo(Genre::class);

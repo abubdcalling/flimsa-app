@@ -159,14 +159,73 @@ class ContentController extends Controller
         ]);
     }
 
+    // public function store(Request $request)
+    // {
+    //     try {
+    //         $videoName = null;
+    //         if ($request->hasFile('video1')) {
+    //             $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
+    //             $path = $request->file('video1')->store('public/files');
+    //             $videoName = "{$awsPath}{$path}";
+
+    //         }
+
+    //         $imageName = null;
+    //         if ($request->hasFile('image')) {
+    //             $imageFile = $request->file('image');
+    //             $imagePath = $imageFile->store('images', 's3');
+
+    //             if (!$imagePath) {
+    //                 throw new \Exception('Failed to upload image to S3');
+    //             }
+
+    //             Storage::disk('s3')->setVisibility($imagePath, 'public');
+    //             $imageName = Storage::disk('s3')->url($imagePath);
+    //         }
+
+    //         $content = Content::create([
+    //             'video1' => $videoName,
+    //             'title' => $request->input('title'),
+    //             'description' => $request->input('description'),
+    //             'publish' => $request->input('publish'),
+    //             'schedule' => $request->input('publish') === 'schedule' ? $request->input('schedule') : null,
+    //             'genre_id' => $request->input('genre_id'),
+    //             'image' => $imageName,
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Content created successfully.',
+    //             'data' => $content,
+    //             'path' => $videoName,
+    //         ], 201);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Failed to store content', [
+    //             'message' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString(),
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to create content.',
+    //         ], 500);
+    //     }
+    // }
+
     public function store(Request $request)
     {
         try {
             $videoName = null;
             if ($request->hasFile('video1')) {
-                $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
-                $path = $request->file('video1')->store('public/files');
-                $videoName = $awsPath . $path;
+                $videoFile = $request->file('video1');
+                $videoPath = $videoFile->store('videos', 's3');  // Store in 'videos/' folder on S3
+
+                if (!$videoPath) {
+                    throw new \Exception('Failed to upload video to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($videoPath, 'public');
+                $videoName = Storage::disk('s3')->url($videoPath);  // Get full S3 URL
             }
 
             $imageName = null;
@@ -183,13 +242,13 @@ class ContentController extends Controller
             }
 
             $content = Content::create([
-                'video1' => $videoName,
+                'video1' => $videoName,  // S3 URL
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'publish' => $request->input('publish'),
-                'schedule' => $request->input('publish') === 'schedule' ? $request->input('schedule') : null,
+                'schedule' => $request->input('schedule') === 'schedule' ? $request->input('schedule') : now(),
                 'genre_id' => $request->input('genre_id'),
-                'image' => $imageName,
+                'image' => $imageName,  // S3 URL
             ]);
 
             return response()->json([
@@ -241,51 +300,63 @@ class ContentController extends Controller
         ]);
     }
 
+
+    // DELETE /api/contents/{id}
+
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'video1' => 'nullable|file',
-            'title' => 'required|string',
-            'description' => 'required|string',
-            'publish' => 'required|in:public,private,schedule',
-            'schedule' => 'nullable|date',
-            'genre_id' => 'required|exists:genres,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
         try {
             $content = Content::findOrFail($id);
 
-            // Handle video upload
+            // Update video if new file uploaded
             if ($request->hasFile('video1')) {
+                // Optional: Delete old video from S3
+                if ($content->video1) {
+                    $oldVideoPath = parse_url($content->video1, PHP_URL_PATH);
+                    $oldVideoPath = ltrim($oldVideoPath, '/');
+                    Storage::disk('s3')->delete($oldVideoPath);
+                }
+
                 $videoFile = $request->file('video1');
-                $videoName = time() . '_content_video.' . $videoFile->getClientOriginalExtension();
-                $videoFile->move(public_path('uploads/Videos'), $videoName);
+                $videoPath = $videoFile->store('videos', 's3');
 
-                // Optionally delete old video file from local (if needed)
-                // @unlink(public_path('uploads/Videos/' . $content->video1));
+                if (!$videoPath) {
+                    throw new \Exception('Failed to upload new video to S3');
+                }
 
-                $content->video1 = $videoName;
+                Storage::disk('s3')->setVisibility($videoPath, 'public');
+                $content->video1 = Storage::disk('s3')->url($videoPath);
             }
 
-            // Handle image upload
+            // Update image if new file uploaded
             if ($request->hasFile('image')) {
+                // Optional: Delete old image from S3
+                if ($content->image) {
+                    $oldImagePath = parse_url($content->image, PHP_URL_PATH);
+                    $oldImagePath = ltrim($oldImagePath, '/');
+                    Storage::disk('s3')->delete($oldImagePath);
+                }
+
                 $imageFile = $request->file('image');
-                $imageName = time() . '_content_image.' . $imageFile->getClientOriginalExtension();
-                $imageFile->move(public_path('uploads/Contents'), $imageName);
+                $imagePath = $imageFile->store('images', 's3');
 
-                // Optionally delete old image file from local (if needed)
-                // @unlink(public_path('uploads/Contents/' . $content->image));
+                if (!$imagePath) {
+                    throw new \Exception('Failed to upload new image to S3');
+                }
 
-                $content->image = $imageName;
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
+                $content->image = Storage::disk('s3')->url($imagePath);
             }
 
-            // Update remaining fields
-            $content->title = $validated['title'];
-            $content->description = $validated['description'];
-            $content->publish = $validated['publish'];
-            $content->schedule = $validated['publish'] === 'schedule' ? $validated['schedule'] : now();
-            $content->genre_id = $validated['genre_id'];
+            // Update other fields
+            $content->title = $request->input('title', $content->title);
+            $content->description = $request->input('description', $content->description);
+            $content->publish = $request->input('publish', $content->publish);
+            $content->schedule = $request->input('publish') === 'schedule'
+                ? $request->input('schedule')
+                : $content->schedule;
+            $content->genre_id = $request->input('genre_id', $content->genre_id);
+
             $content->save();
 
             return response()->json([
@@ -294,15 +365,17 @@ class ContentController extends Controller
                 'data' => $content,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to update content: ' . $e->getMessage());
+            \Log::error('Failed to update content', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update content.',
             ], 500);
         }
     }
-
-    // DELETE /api/contents/{id}
 
     public function destroy($id)
     {
