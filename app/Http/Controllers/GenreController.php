@@ -196,7 +196,7 @@ class GenreController extends Controller
             $weeklyTopContents = Content::with('genres:id,name')
                 ->whereBetween('created_at', [Carbon::now()->subDays(7), Carbon::now()])
                 ->orderByDesc('view_count')
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->take(10)
                 ->get()
                 ->transform(function ($content) {
