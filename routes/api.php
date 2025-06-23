@@ -87,6 +87,7 @@ Route::middleware('auth:api')->group(function () {
 
 });
 
+Route::get('subscriptions', [SubscriptionController::class, 'index']);
 Route::get('contents', [ContentController::class, 'index']);
 Route::get('allcontents', [ContentController::class, 'allcontents']);
 Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
