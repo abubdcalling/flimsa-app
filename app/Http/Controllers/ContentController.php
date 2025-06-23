@@ -168,58 +168,7 @@ class ContentController extends Controller
         ]);
     }
 
-    // public function store(Request $request)
-    // {
-    //     try {
-    //         $videoName = null;
-    //         if ($request->hasFile('video1')) {
-    //             $awsPath = 'https://flimsabucket.s3.us-east-2.amazonaws.com/';
-    //             $path = $request->file('video1')->store('public/files');
-    //             $videoName = "{$awsPath}{$path}";
 
-    //         }
-
-    //         $imageName = null;
-    //         if ($request->hasFile('image')) {
-    //             $imageFile = $request->file('image');
-    //             $imagePath = $imageFile->store('images', 's3');
-
-    //             if (!$imagePath) {
-    //                 throw new \Exception('Failed to upload image to S3');
-    //             }
-
-    //             Storage::disk('s3')->setVisibility($imagePath, 'public');
-    //             $imageName = Storage::disk('s3')->url($imagePath);
-    //         }
-
-    //         $content = Content::create([
-    //             'video1' => $videoName,
-    //             'title' => $request->input('title'),
-    //             'description' => $request->input('description'),
-    //             'publish' => $request->input('publish'),
-    //             'schedule' => $request->input('publish') === 'schedule' ? $request->input('schedule') : null,
-    //             'genre_id' => $request->input('genre_id'),
-    //             'image' => $imageName,
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Content created successfully.',
-    //             'data' => $content,
-    //             'path' => $videoName,
-    //         ], 201);
-    //     } catch (\Exception $e) {
-    //         \Log::error('Failed to store content', [
-    //             'message' => $e->getMessage(),
-    //             'trace' => $e->getTraceAsString(),
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to create content.',
-    //         ], 500);
-    //     }
-    // }
 
     public function store(Request $request)
     {
