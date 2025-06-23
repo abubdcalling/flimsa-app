@@ -232,236 +232,236 @@ class GenreController extends Controller
 
    
    
-    public function Home(Request $request)
-    {
-        try {
-            // Get pagination size from request or default to 10
-            $perPage = $request->get('per_page', 10);
-            $filterGenre = $request->get('genre');
+    // public function Home(Request $request)
+    // {
+    //     try {
+    //         // Get pagination size from request or default to 10
+    //         $perPage = $request->get('per_page', 10);
+    //         $filterGenre = $request->get('genre');
 
-            // Get genre names
-            $genreNames = Genre::pluck('name');
+    //         // Get genre names
+    //         $genreNames = Genre::pluck('name');
 
-            // Latest 1 content
-            $latestContentQuery = Content::with('genres:id,name')
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->latest()
-                ->take(1);
+    //         // Latest 1 content
+    //         $latestContentQuery = Content::with('genres:id,name')
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->latest()
+    //             ->take(1);
 
-            if ($filterGenre) {
-                $latestContentQuery->whereHas('genres', function ($query) use ($filterGenre) {
-                    $query->where('name', $filterGenre);
-                });
-            }
+    //         if ($filterGenre) {
+    //             $latestContentQuery->whereHas('genres', function ($query) use ($filterGenre) {
+    //                 $query->where('name', $filterGenre);
+    //             });
+    //         }
 
-            $latestContent = $latestContentQuery->get()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $latestContent = $latestContentQuery->get()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Popular content
-            $popularContentsQuery = Content::with('genres:id,name')
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->orderByDesc('view_count');
+    //         // Popular content
+    //         $popularContentsQuery = Content::with('genres:id,name')
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->orderByDesc('view_count');
 
-            if ($filterGenre) {
-                $popularContentsQuery->whereHas('genres', function ($query) use ($filterGenre) {
-                    $query->where('name', $filterGenre);
-                });
-            }
+    //         if ($filterGenre) {
+    //             $popularContentsQuery->whereHas('genres', function ($query) use ($filterGenre) {
+    //                 $query->where('name', $filterGenre);
+    //             });
+    //         }
 
-            $popularContents = $popularContentsQuery->paginate($perPage);
-            $popularContents->getCollection()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $popularContents = $popularContentsQuery->paginate($perPage);
+    //         $popularContents->getCollection()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Upcoming content
-            $upcomingContentsQuery = Content::with('genres:id,name')
-                ->where('schedule', '>', Carbon::now())
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->orderBy('schedule', 'asc');
+    //         // Upcoming content
+    //         $upcomingContentsQuery = Content::with('genres:id,name')
+    //             ->where('schedule', '>', Carbon::now())
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->orderBy('schedule', 'asc');
 
-            if ($filterGenre) {
-                $upcomingContentsQuery->whereHas('genres', function ($query) use ($filterGenre) {
-                    $query->where('name', $filterGenre);
-                });
-            }
+    //         if ($filterGenre) {
+    //             $upcomingContentsQuery->whereHas('genres', function ($query) use ($filterGenre) {
+    //                 $query->where('name', $filterGenre);
+    //             });
+    //         }
 
-            $upcomingContents = $upcomingContentsQuery->paginate($perPage);
-            $upcomingContents->getCollection()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $upcomingContents = $upcomingContentsQuery->paginate($perPage);
+    //         $upcomingContents->getCollection()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Comedy content
-            $comedyContents = Content::with('genres:id,name')
-                ->whereHas('genres', function ($query) {
-                    $query->where('name', 'Comedy');
-                })
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->latest()
-                ->paginate($perPage);
+    //         // Comedy content
+    //         $comedyContents = Content::with('genres:id,name')
+    //             ->whereHas('genres', function ($query) {
+    //                 $query->where('name', 'Comedy');
+    //             })
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->latest()
+    //             ->paginate($perPage);
 
-            $comedyContents->getCollection()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $comedyContents->getCollection()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Family content
-            $familyContents = Content::with('genres:id,name')
-                ->whereHas('genres', function ($query) {
-                    $query->where('name', 'Family');
-                })
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->latest()
-                ->paginate($perPage);
+    //         // Family content
+    //         $familyContents = Content::with('genres:id,name')
+    //             ->whereHas('genres', function ($query) {
+    //                 $query->where('name', 'Family');
+    //             })
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->latest()
+    //             ->paginate($perPage);
 
-            $familyContents->getCollection()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $familyContents->getCollection()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Dramas content
-            $dramasContents = Content::with('genres:id,name')
-                ->whereHas('genres', function ($query) {
-                    $query->where('name', 'Dramas');
-                })
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->latest()
-                ->paginate($perPage);
+    //         // Dramas content
+    //         $dramasContents = Content::with('genres:id,name')
+    //             ->whereHas('genres', function ($query) {
+    //                 $query->where('name', 'Dramas');
+    //             })
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->latest()
+    //             ->paginate($perPage);
 
-            $dramasContents->getCollection()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $dramasContents->getCollection()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Tv Shows content
-            $tvshows = Content::with('genres:id,name')
-                ->whereHas('genres', function ($query) {
-                    $query->where('name', 'tv shows');
-                })
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
-                ->latest()
-                ->paginate($perPage);
+    //         // Tv Shows content
+    //         $tvshows = Content::with('genres:id,name')
+    //             ->whereHas('genres', function ($query) {
+    //                 $query->where('name', 'tv shows');
+    //             })
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->latest()
+    //             ->paginate($perPage);
 
-            $tvshows->getCollection()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $tvshows->getCollection()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            // Weekly Top Content
-            $weeklyTopQuery = Content::with('genres:id,name')
-                ->whereBetween('created_at', [Carbon::now()->subDays(7), Carbon::now()])
-                ->orderByDesc('view_count')
-                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at');
+    //         // Weekly Top Content
+    //         $weeklyTopQuery = Content::with('genres:id,name')
+    //             ->whereBetween('created_at', [Carbon::now()->subDays(7), Carbon::now()])
+    //             ->orderByDesc('view_count')
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at');
 
-            if ($filterGenre) {
-                $weeklyTopQuery->whereHas('genres', function ($query) use ($filterGenre) {
-                    $query->where('name', $filterGenre);
-                });
-            }
+    //         if ($filterGenre) {
+    //             $weeklyTopQuery->whereHas('genres', function ($query) use ($filterGenre) {
+    //                 $query->where('name', $filterGenre);
+    //             });
+    //         }
 
-            $weeklyTopContents = $weeklyTopQuery->take(10)->get()->transform(function ($content) {
-                return [
-                    'id' => $content->id,
-                    'title' => $content->title,
-                    'description' => $content->description,
-                    'image' => $content->image,
-                    'publish' => $content->publish,
-                    'schedule' => $content->schedule,
-                    'view_count' => $content->view_count,
-                    'created_at' => $content->created_at,
-                    'genre_name' => optional($content->genres)->name,
-                ];
-            });
+    //         $weeklyTopContents = $weeklyTopQuery->take(10)->get()->transform(function ($content) {
+    //             return [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ];
+    //         });
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'genre_names' => $genreNames,
-                    'popular' => $popularContents,
-                    'upcoming' => $upcomingContents,
-                    'comedy' => $comedyContents,
-                    'family' => $familyContents,
-                    'dramas' => $dramasContents,
-                    'tv_shows' => $tvshows,
-                    'weekly_top' => $weeklyTopContents,
-                    'latest' => $latestContent,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error fetching content: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'genre_names' => $genreNames,
+    //                 'popular' => $popularContents,
+    //                 'upcoming' => $upcomingContents,
+    //                 'comedy' => $comedyContents,
+    //                 'family' => $familyContents,
+    //                 'dramas' => $dramasContents,
+    //                 'tv_shows' => $tvshows,
+    //                 'weekly_top' => $weeklyTopContents,
+    //                 'latest' => $latestContent,
+    //             ]
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Error fetching content: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch content.'
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch content.'
+    //         ], 500);
+    //     }
+    // }
 
     public function index()
     {
