@@ -18,15 +18,24 @@ class ContentController extends Controller
     public function History(Request $request)
     {
         try {
-            // Get per_page value from query, default to 10
             $perPage = $request->query('per_page', 10);
+            $userId = $request->input('user_id', Auth::id());
 
-            $contents = Content::whereIn('id', function ($query) {
-                $query
-                    ->select('content_id')
-                    ->from('histories')
-                    ->where('user_id', Auth::id());
-            })
+            // Optional access rule: allow self or admin
+            if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
+
+            // Get content IDs viewed by user
+            $contentIds = History::where('user_id', $userId)
+                ->pluck('content_id');
+
+            // Fetch contents with optional genre relation
+            $contents = Content::with('genre')
+                ->whereIn('id', $contentIds)
                 ->orderBy('updated_at', 'desc')
                 ->paginate($perPage);
 
@@ -299,7 +308,6 @@ class ContentController extends Controller
             'data' => $content,
         ]);
     }
-
 
     // DELETE /api/contents/{id}
 

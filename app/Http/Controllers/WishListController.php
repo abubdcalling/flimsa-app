@@ -24,8 +24,9 @@ class WishListController extends Controller
                 ], 403);
             }
 
-            // Get all content IDs from wishlists for this user
+            // Get content IDs from wishlists where isWished is true
             $contentIds = WishList::where('user_id', $userId)
+                ->where('isWished', true)
                 ->pluck('content_id');
 
             if ($contentIds->isEmpty()) {
@@ -45,7 +46,7 @@ class WishListController extends Controller
                         'id' => $content->id,
                         'title' => $content->title,
                         'publish' => $content->publish,
-                        'genre_name' => $content->genre ? $content->genre->name : null,
+                        'genre_name' => optional($content->genre)->name,
                         'video1' => $content->video1,
                         'description' => $content->description,
                         'schedule' => $content->schedule,
@@ -69,8 +70,6 @@ class WishListController extends Controller
             ], 500);
         }
     }
-
-
 
     public function store(Request $request)
     {
