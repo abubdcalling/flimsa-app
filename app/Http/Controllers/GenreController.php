@@ -463,6 +463,7 @@ class GenreController extends Controller
     //     }
     // }
 
+  
     public function index()
     {
         $genres = Genre::all();  // gets all columns and all records
