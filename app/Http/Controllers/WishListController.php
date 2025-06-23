@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Content;
+use App\Models\WishList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
-
-use App\Models\WishList;
 
 class WishListController extends Controller
 {
@@ -72,6 +70,32 @@ class WishListController extends Controller
         }
     }
 
+
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'content_id' => 'required|exists:contents,id',
+            'isWished' => 'required|boolean',
+        ]);
+
+        $wishlist = WishList::updateOrCreate(
+            [
+                'user_id' => Auth::id(),
+                'content_id' => $validated['content_id'],
+            ],
+            [
+                'isWished' => $validated['isWished'],
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Wishlist item stored successfully.',
+            'data' => $wishlist
+        ], 201);
+    }
+
     // POST /api/wishlist
 
     public function update(Request $request, $contentId)
@@ -110,8 +134,6 @@ class WishListController extends Controller
 
         return response()->json($wishlist);
     }
-
-
 
     // DELETE /api/wishlist/{id}
 
