@@ -219,6 +219,122 @@ class GenreController extends Controller
     //     }
     // }
 
+    // public function Home(Request $request)
+    // {
+    //     try {
+    //         $perPage = $request->get('per_page', 10);
+    //         $filterGenre = $request->get('genre');
+
+    //         // Get genre names
+    //         $genreNames = Genre::pluck('name');
+
+    //         // Define a closure for genre filtering
+    //         $genreFilter = function ($query) use ($filterGenre) {
+    //             if ($filterGenre) {
+    //                 $query->where('name', $filterGenre);
+    //             }
+    //         };
+
+    //         // Latest content (not filtered by genre)
+    //         $latestContent = Content::with('genres:id,name')
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->latest()
+    //             ->take(1)
+    //             ->get()
+    //             ->transform(function ($content) {
+    //                 return [
+    //                     'id' => $content->id,
+    //                     'title' => $content->title,
+    //                     'description' => $content->description,
+    //                     'image' => $content->image,
+    //                     'publish' => $content->publish,
+    //                     'schedule' => $content->schedule,
+    //                     'view_count' => $content->view_count,
+    //                     'created_at' => $content->created_at,
+    //                     'genre_name' => optional($content->genres)->name,
+    //                 ];
+    //             });
+
+    //         // Popular content (optional genre filter)
+    //         $popularContents = Content::with('genres:id,name')
+    //             ->when($filterGenre, fn($q) => $q->whereHas('genres', $genreFilter))
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->orderByDesc('view_count')
+    //             ->paginate($perPage);
+
+    //         $popularContents->getCollection()->transform(fn($content) => [
+    //             'id' => $content->id,
+    //             'title' => $content->title,
+    //             'description' => $content->description,
+    //             'image' => $content->image,
+    //             'publish' => $content->publish,
+    //             'schedule' => $content->schedule,
+    //             'view_count' => $content->view_count,
+    //             'created_at' => $content->created_at,
+    //             'genre_name' => optional($content->genres)->name,
+    //         ]);
+
+    //         // Upcoming content (optional genre filter)
+    //         $upcomingContents = Content::with('genres:id,name')
+    //             ->when($filterGenre, fn($q) => $q->whereHas('genres', $genreFilter))
+    //             ->where('schedule', '>', Carbon::now())
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->orderBy('schedule', 'asc')
+    //             ->paginate($perPage);
+
+    //         $upcomingContents->getCollection()->transform(fn($content) => [
+    //             'id' => $content->id,
+    //             'title' => $content->title,
+    //             'description' => $content->description,
+    //             'image' => $content->image,
+    //             'publish' => $content->publish,
+    //             'schedule' => $content->schedule,
+    //             'view_count' => $content->view_count,
+    //             'created_at' => $content->created_at,
+    //             'genre_name' => optional($content->genres)->name,
+    //         ]);
+
+    //         // Weekly Top Content (optional genre filter)
+    //         $weeklyTopContents = Content::with('genres:id,name')
+    //             ->when($filterGenre, fn($q) => $q->whereHas('genres', $genreFilter))
+    //             ->whereBetween('created_at', [Carbon::now()->subDays(7), Carbon::now()])
+    //             ->orderByDesc('view_count')
+    //             ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+    //             ->take(10)
+    //             ->get()
+    //             ->transform(fn($content) => [
+    //                 'id' => $content->id,
+    //                 'title' => $content->title,
+    //                 'description' => $content->description,
+    //                 'image' => $content->image,
+    //                 'publish' => $content->publish,
+    //                 'schedule' => $content->schedule,
+    //                 'view_count' => $content->view_count,
+    //                 'created_at' => $content->created_at,
+    //                 'genre_name' => optional($content->genres)->name,
+    //             ]);
+
+    //         // Return JSON
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'genre_names' => $genreNames,
+    //                 'popular' => $popularContents,
+    //                 'upcoming' => $upcomingContents,
+    //                 'weekly_top' => $weeklyTopContents,
+    //                 'latest' => $latestContent,
+    //             ]
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Error fetching content: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch content.'
+    //         ], 500);
+    //     }
+    // }
+
     public function Home(Request $request)
     {
         try {
@@ -314,6 +430,27 @@ class GenreController extends Controller
                     'genre_name' => optional($content->genres)->name,
                 ]);
 
+            // Comedy Content
+            $comedyContents = Content::with('genres:id,name')
+                ->whereHas('genres', function ($q) {
+                    $q->where('name', 'Comedy');
+                })
+                ->select('id', 'title', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->latest()
+                ->take(10)
+                ->get()
+                ->transform(fn($content) => [
+                    'id' => $content->id,
+                    'title' => $content->title,
+                    'description' => $content->description,
+                    'image' => $content->image,
+                    'publish' => $content->publish,
+                    'schedule' => $content->schedule,
+                    'view_count' => $content->view_count,
+                    'created_at' => $content->created_at,
+                    'genre_name' => optional($content->genres)->name,
+                ]);
+
             // Return JSON
             return response()->json([
                 'success' => true,
@@ -323,6 +460,7 @@ class GenreController extends Controller
                     'upcoming' => $upcomingContents,
                     'weekly_top' => $weeklyTopContents,
                     'latest' => $latestContent,
+                    'comedy' => $comedyContents,
                 ]
             ]);
         } catch (\Exception $e) {
