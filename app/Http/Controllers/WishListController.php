@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 
-use App\Models\Wishlist;
+use App\Models\WishList;
 
 class WishListController extends Controller
 {
@@ -27,7 +27,7 @@ class WishListController extends Controller
             }
 
             // Get all content IDs from wishlists for this user
-            $contentIds = Wishlist::where('user_id', $userId)
+            $contentIds = WishList::where('user_id', $userId)
                 ->pluck('content_id');
 
             if ($contentIds->isEmpty()) {
@@ -80,7 +80,7 @@ class WishListController extends Controller
             'isWished' => 'required|boolean',
         ]);
 
-        $wishlist = Wishlist::where('user_id', Auth::id())
+        $wishlist = WishList::where('user_id', Auth::id())
             ->where('content_id', $contentId)
             ->first();
 
@@ -104,7 +104,7 @@ class WishListController extends Controller
     // GET /api/wishlist/{id}
     public function show($id)
     {
-        $wishlist = Wishlist::with('content')
+        $wishlist = WishList::with('content')
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
@@ -117,7 +117,7 @@ class WishListController extends Controller
 
     public function destroy($contentId)
     {
-        $wishlist = Wishlist::where('user_id', Auth::id())
+        $wishlist = WishList::where('user_id', Auth::id())
             ->where('content_id', $contentId)
             ->first();
 
