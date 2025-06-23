@@ -39,18 +39,15 @@ Route::get('home', [GenreController::class, 'Home']);
 Route::get('search', [GenreController::class, 'SearchContent']);
 Route::get('genres', [GenreController::class, 'index']);
 
-
- Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
- Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
-
+Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
+Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
 
 Route::middleware('auth:api')->group(function () {
 
 
     Route::middleware(['role:admin'])->group(function () {
-
-        Route::apiResource('contents', ContentController::class)->except(['index','show']);
-        Route::apiResource('genres', GenreController::class)->except(['Home','index']);
+        Route::apiResource('contents', ContentController::class)->except(['index', 'show']);
+        Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
         // Route::get('contents/history', [ContentController::class, 'History']);
 
@@ -59,24 +56,33 @@ Route::middleware('auth:api')->group(function () {
             Route::post('info', [SettingController::class, 'storeOrUpdate']);
             Route::get('info', [SettingController::class, 'index']);
         });
-
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
+
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
-        Route::get('contents/{id}', [ContentController::class,'show']);
+        Route::get('contents/{id}', [ContentController::class, 'show']);
+        Route::put('users/password', [SettingController::class, 'storeOrUpdatePasswordForUser']);
+
+        // Route::put('update-password', [SettingController::class,'storeOrUpdateForUser']);
+        // Route::get('contents/{id}', [ContentController::class,'show']);
 
         Route::get('contents/history', [ContentController::class, 'History']);
         Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
 
-        Route::apiResource('video-tracking', VideoTrackingController::class);     
-        Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class,'show']);     
-        Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class,'destroy']);     
-
+        Route::apiResource('video-tracking', VideoTrackingController::class);
+        Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'show']);
+        Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'destroy']);
     });
+
+    // Route::middleware(['role:admin,subscriber'])->group(function () {
+    //     Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
+
+    // });
+
 
 
 });
@@ -84,9 +90,3 @@ Route::middleware('auth:api')->group(function () {
 Route::get('contents', [ContentController::class, 'index']);
 Route::get('allcontents', [ContentController::class, 'allcontents']);
 Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
-
-
-
-
-
-
