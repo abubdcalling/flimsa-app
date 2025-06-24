@@ -159,7 +159,7 @@ class ContentController extends Controller
 
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
-                ->select('id', 'video1', 'title', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
+                ->select('id', 'video1', 'title','director_name','profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
                 ->paginate($paginateCount);
 
