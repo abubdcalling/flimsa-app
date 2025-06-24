@@ -403,7 +403,7 @@ class ContentController extends Controller
                 ->exists();
 
             // Check if wishlisted
-            $isWishlisted = \App\Models\Wishlist::where('user_id', $userId)
+            $isWishlisted = \App\Models\WishList::where('user_id', $userId)
                 ->where('content_id', $id)
                 ->exists();
         }
