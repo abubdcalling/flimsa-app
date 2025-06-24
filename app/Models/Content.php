@@ -13,7 +13,8 @@ class Content extends Model
 
     protected $fillable = [
         'video1', 'title', 'description', 'publish',
-        'schedule', 'genre_id', 'image', 'view_count'
+        'schedule', 'genre_id', 'image', 'view_count',
+        'profile_pic','director_name'
     ];
 
     

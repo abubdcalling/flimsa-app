@@ -31,7 +31,7 @@ class GenreController extends Controller
 
             // Latest 1 content
             $latestContent = Content::with('genres:id,name')
-                ->select('id', 'title', 'description', 'image','video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->latest()
                 ->take(1)
                 ->get()
@@ -47,6 +47,8 @@ class GenreController extends Controller
                         'view_count' => $content->view_count,
                         'created_at' => $content->created_at,
                         'genre_name' => optional($content->genres)->name,
+                        'director_name' => $content->director_name,
+                        'profile_pic' => $content->profile_pic,
                     ];
                 });
 
@@ -55,7 +57,7 @@ class GenreController extends Controller
 
             // Fetch most viewed content (popular)
             $popularContents = Content::with('genres:id,name')
-                ->select('id', 'title','video1', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'video1','director_name','profile_pic', 'description', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->orderByDesc('view_count')
                 ->paginate($perPage);
 
@@ -71,13 +73,15 @@ class GenreController extends Controller
                     'view_count' => $content->view_count,
                     'created_at' => $content->created_at,
                     'genre_name' => optional($content->genres)->name,
+                    'director_name' => $content->director_name,
+                    'profile_pic' => $content->profile_pic,
                 ];
             });
 
             // Fetch upcoming content (future schedule date)
             $upcomingContents = Content::with('genres:id,name')
                 ->where('schedule', '>', Carbon::now())
-                ->select('id', 'title', 'description','video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->orderBy('schedule', 'asc')
                 ->paginate($perPage);
 
@@ -93,6 +97,8 @@ class GenreController extends Controller
                     'view_count' => $content->view_count,
                     'created_at' => $content->created_at,
                     'genre_name' => optional($content->genres)->name,
+                    'director_name' => $content->director_name,
+                    'profile_pic' => $content->profile_pic,
                 ];
             });
 
@@ -101,7 +107,7 @@ class GenreController extends Controller
                 ->whereHas('genres', function ($query) {
                     $query->where('name', 'Comedy');
                 })
-                ->select('id', 'title', 'description', 'image','video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->latest()
                 ->paginate($perPage);
 
@@ -117,6 +123,8 @@ class GenreController extends Controller
                     'view_count' => $content->view_count,
                     'created_at' => $content->created_at,
                     'genre_name' => optional($content->genres)->name,
+                    'director_name' => $content->director_name,
+                    'profile_pic' => $content->profile_pic,
                 ];
             });
 
@@ -125,7 +133,7 @@ class GenreController extends Controller
                 ->whereHas('genres', function ($query) {
                     $query->where('name', 'Family');
                 })
-                ->select('id', 'title', 'description','video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->latest()
                 ->paginate($perPage);
 
@@ -141,6 +149,8 @@ class GenreController extends Controller
                     'view_count' => $content->view_count,
                     'created_at' => $content->created_at,
                     'genre_name' => optional($content->genres)->name,
+                    'director_name' => $content->director_name,
+                    'profile_pic' => $content->profile_pic,
                 ];
             });
 
@@ -149,7 +159,7 @@ class GenreController extends Controller
                 ->whereHas('genres', function ($query) {
                     $query->where('name', 'Dramas');
                 })
-                ->select('id', 'title', 'description','video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->latest()
                 ->paginate($perPage);
 
@@ -165,6 +175,8 @@ class GenreController extends Controller
                     'view_count' => $content->view_count,
                     'created_at' => $content->created_at,
                     'genre_name' => optional($content->genres)->name,
+                    'director_name' => $content->director_name,
+                    'profile_pic' => $content->profile_pic,
                 ];
             });
 
@@ -173,7 +185,7 @@ class GenreController extends Controller
                 ->whereHas('genres', function ($query) {
                     $query->where('name', 'tv shows');
                 })
-                ->select('id', 'title', 'description', 'image','video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->latest()
                 ->paginate($perPage);
 
@@ -189,6 +201,8 @@ class GenreController extends Controller
                     'view_count' => $content->view_count,
                     'created_at' => $content->created_at,
                     'genre_name' => optional($content->genres)->name,
+                    'director_name' => $content->director_name,
+                    'profile_pic' => $content->profile_pic,
                 ];
             });
 
@@ -196,7 +210,7 @@ class GenreController extends Controller
             $weeklyTopContents = Content::with('genres:id,name')
                 ->whereBetween('created_at', [Carbon::now()->subDays(7), Carbon::now()])
                 ->orderByDesc('view_count')
-                ->select('id', 'title', 'description','video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
+                ->select('id', 'title', 'description','director_name','profile_pic', 'video1', 'image', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->take(10)
                 ->get()
                 ->transform(function ($content) {
@@ -211,6 +225,8 @@ class GenreController extends Controller
                         'view_count' => $content->view_count,
                         'created_at' => $content->created_at,
                         'genre_name' => optional($content->genres)->name,
+                        'director_name' => $content->director_name,
+                        'profile_pic' => $content->profile_pic,
                     ];
                 });
 
@@ -238,8 +254,6 @@ class GenreController extends Controller
         }
     }
 
-   
-   
     // public function Home(Request $request)
     // {
     //     try {
@@ -471,7 +485,6 @@ class GenreController extends Controller
     //     }
     // }
 
-  
     public function index()
     {
         $genres = Genre::all();  // gets all columns and all records

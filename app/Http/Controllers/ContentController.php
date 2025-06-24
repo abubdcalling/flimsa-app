@@ -15,6 +15,70 @@ use Illuminate\Support\Facades\Storage;
 
 class ContentController extends Controller
 {
+    public function relatedContent($id)
+    {
+        try {
+            // Find the content by ID
+            $content = Content::find($id);
+
+            if (!$content) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Content not found.'
+                ], 404);
+            }
+
+            // Get pagination value from request or set default
+            $perPage = request()->query('per_page', 10);  // default 10
+            $page = request()->query('page', 1);  // default 1
+
+            // Fetch related content with same genre, excluding the current one
+            $relatedContents = Content::with('genre')
+                ->where('genre_id', $content->genre_id)
+                ->where('id', '!=', $id)
+                ->latest()
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            // Transform the items
+            $relatedContents->getCollection()->transform(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'video1' => $item->video1,
+                    'title' => $item->title,
+                    'description' => $item->description,
+                    'publish' => $item->publish,
+                    'schedule' => $item->schedule,
+                    'genre_id' => $item->genre_id,
+                    'genre_name' => $item->genre->name ?? null,
+                    'director_name' => $item->director_name,
+                    'profile_pic' => $item->profile_pic,
+                    'image' => $item->image,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
+                    'view_count' => $item->view_count,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Related content fetched successfully.',
+                'data' => $relatedContents->items(),
+                'meta' => [
+                    'current_page' => $relatedContents->currentPage(),
+                    'last_page' => $relatedContents->lastPage(),
+                    'per_page' => $relatedContents->perPage(),
+                    'total' => $relatedContents->total()
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch related content.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function History(Request $request)
     {
         try {
@@ -168,8 +232,6 @@ class ContentController extends Controller
         ]);
     }
 
-
-
     public function store(Request $request)
     {
         try {
@@ -199,6 +261,20 @@ class ContentController extends Controller
                 $imageName = Storage::disk('s3')->url($imagePath);
             }
 
+            $profilePicUrl = null;
+
+            if ($request->hasFile('profile_pic')) {
+                $profileFile = $request->file('profile_pic');
+                $profilePath = $profileFile->store('profile_pics', 's3');
+
+                if (!$profilePath) {
+                    throw new \Exception('Failed to upload profile picture to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($profilePath, 'public');
+                $profilePicUrl = Storage::disk('s3')->url($profilePath);
+            }
+
             $content = Content::create([
                 'video1' => $videoName,  // S3 URL
                 'title' => $request->input('title'),
@@ -207,6 +283,8 @@ class ContentController extends Controller
                 'schedule' => $request->input('schedule') === 'schedule' ? $request->input('schedule') : now(),
                 'genre_id' => $request->input('genre_id'),
                 'image' => $imageName,  // S3 URL
+                'director_name' => $request->input('director_name'),
+                'profile_pic' => $profilePicUrl,
             ]);
 
             return response()->json([
