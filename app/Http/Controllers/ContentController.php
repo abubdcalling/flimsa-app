@@ -338,17 +338,108 @@ class ContentController extends Controller
 
     // DELETE /api/contents/{id}
 
+    // public function update(Request $request, $id)
+    // {
+    //     try {
+    //         $content = Content::findOrFail($id);
+
+    //         // Update video if new file uploaded
+    //         if ($request->hasFile('video1')) {
+    //             // Optional: Delete old video from S3
+    //             if ($content->video1) {
+    //                 $oldVideoPath = parse_url($content->video1, PHP_URL_PATH);
+    //                 $oldVideoPath = ltrim($oldVideoPath, '/');
+    //                 Storage::disk('s3')->delete($oldVideoPath);
+    //             }
+
+    //             $videoFile = $request->file('video1');
+    //             $videoPath = $videoFile->store('videos', 's3');
+
+    //             if (!$videoPath) {
+    //                 throw new \Exception('Failed to upload new video to S3');
+    //             }
+
+    //             Storage::disk('s3')->setVisibility($videoPath, 'public');
+    //             $content->video1 = Storage::disk('s3')->url($videoPath);
+    //         }
+
+    //         // Update image if new file uploaded
+    //         if ($request->hasFile('image')) {
+    //             // Optional: Delete old image from S3
+    //             if ($content->image) {
+    //                 $oldImagePath = parse_url($content->image, PHP_URL_PATH);
+    //                 $oldImagePath = ltrim($oldImagePath, '/');
+    //                 Storage::disk('s3')->delete($oldImagePath);
+    //             }
+
+    //             $imageFile = $request->file('image');
+    //             $imagePath = $imageFile->store('images', 's3');
+
+    //             if (!$imagePath) {
+    //                 throw new \Exception('Failed to upload new image to S3');
+    //             }
+
+    //             Storage::disk('s3')->setVisibility($imagePath, 'public');
+    //             $content->image = Storage::disk('s3')->url($imagePath);
+    //         }
+
+    //         // Update profile_pic if new file uploaded
+    //         if ($request->hasFile('profile_pic')) {
+    //             if ($content->profile_pic) {
+    //                 $oldProfilePicPath = ltrim(parse_url($content->profile_pic, PHP_URL_PATH), '/');
+    //                 Storage::disk('s3')->delete($oldProfilePicPath);
+    //             }
+
+    //             $profilePicFile = $request->file('profile_pic');
+    //             $profilePicPath = $profilePicFile->store('profiles', 's3');
+
+    //             if (!$profilePicPath) {
+    //                 throw new \Exception('Failed to upload new profile picture to S3');
+    //             }
+
+    //             Storage::disk('s3')->setVisibility($profilePicPath, 'public');
+    //             $content->profile_pic = Storage::disk('s3')->url($profilePicPath);
+    //         }
+
+    //         // Update other fields
+    //         $content->title = $request->input('title', $content->title);
+    //         $content->description = $request->input('description', $content->description);
+    //         $content->publish = $request->input('publish', $content->publish);
+    //         $content->schedule = $request->input('publish') === 'schedule'
+    //             ? $request->input('schedule')
+    //             : $content->schedule;
+    //         $content->genre_id = $request->input('genre_id', $content->genre_id);
+    //         $content->director_name = $request->input('director_name', $content->director_name);
+
+    //         $content->save();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Content updated successfully.',
+    //             'data' => $content,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Failed to update content', [
+    //             'message' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString(),
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to update content.',
+    //         ], 500);
+    //     }
+    // }
+
     public function update(Request $request, $id)
     {
         try {
             $content = Content::findOrFail($id);
 
-            // Update video if new file uploaded
+            // Update video1 if a new video is uploaded
             if ($request->hasFile('video1')) {
-                // Optional: Delete old video from S3
                 if ($content->video1) {
-                    $oldVideoPath = parse_url($content->video1, PHP_URL_PATH);
-                    $oldVideoPath = ltrim($oldVideoPath, '/');
+                    $oldVideoPath = ltrim(parse_url($content->video1, PHP_URL_PATH), '/');
                     Storage::disk('s3')->delete($oldVideoPath);
                 }
 
@@ -363,12 +454,10 @@ class ContentController extends Controller
                 $content->video1 = Storage::disk('s3')->url($videoPath);
             }
 
-            // Update image if new file uploaded
+            // Update image if a new image is uploaded
             if ($request->hasFile('image')) {
-                // Optional: Delete old image from S3
                 if ($content->image) {
-                    $oldImagePath = parse_url($content->image, PHP_URL_PATH);
-                    $oldImagePath = ltrim($oldImagePath, '/');
+                    $oldImagePath = ltrim(parse_url($content->image, PHP_URL_PATH), '/');
                     Storage::disk('s3')->delete($oldImagePath);
                 }
 
@@ -383,6 +472,24 @@ class ContentController extends Controller
                 $content->image = Storage::disk('s3')->url($imagePath);
             }
 
+            // Update profile_pic if a new profile picture is uploaded
+            if ($request->hasFile('profile_pic')) {
+                if ($content->profile_pic) {
+                    $oldProfilePath = ltrim(parse_url($content->profile_pic, PHP_URL_PATH), '/');
+                    Storage::disk('s3')->delete($oldProfilePath);
+                }
+
+                $profileFile = $request->file('profile_pic');
+                $profilePath = $profileFile->store('profile_pics', 's3');
+
+                if (!$profilePath) {
+                    throw new \Exception('Failed to upload new profile picture to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($profilePath, 'public');
+                $content->profile_pic = Storage::disk('s3')->url($profilePath);
+            }
+
             // Update other fields
             $content->title = $request->input('title', $content->title);
             $content->description = $request->input('description', $content->description);
@@ -391,6 +498,7 @@ class ContentController extends Controller
                 ? $request->input('schedule')
                 : $content->schedule;
             $content->genre_id = $request->input('genre_id', $content->genre_id);
+            $content->director_name = $request->input('director_name', $content->director_name);
 
             $content->save();
 
