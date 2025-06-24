@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subscription;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -13,12 +14,20 @@ class SubscriptionController extends Controller
     {
         try {
             $subscriptions = Subscription::all();
+
+            // Count users with specific plan types
+            $withAdsCount = User::where('plan_type', 'withads')->count();
+            $withoutAdsCount = User::where('plan_type', 'withoutads')->count();
+
             return response()->json([
                 'success' => true,
                 'data' => $subscriptions,
+                'withads_count' => $withAdsCount,
+                'withoutads_count' => $withoutAdsCount,
             ]);
         } catch (Exception $e) {
             Log::error('Subscription index error: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve subscriptions.',
