@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Content;
+use App\Models\Genre;
 use App\Models\History;
+use App\Models\Subscription;
+use App\Models\User;
 use Carbon\Carbon;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\JsonResponse;
@@ -12,14 +15,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-    use App\Models\User;
-    use App\Models\Genre;
-    use App\Models\Subscription;
 
 class ContentController extends Controller
 {
-
-
     public function dashbaord()
     {
         try {
@@ -385,12 +383,29 @@ class ContentController extends Controller
         // Increment view_count
         $content->increment('view_count');
 
-        // Log user view if logged in
+        // Initialize like/wishlist info
+        $isLiked = false;
+        $isWishlisted = false;
+
+        // Log view and fetch like/wishlist if user is logged in
         if (Auth::check()) {
+            $userId = Auth::id();
+
+            // Log history
             History::updateOrCreate(
-                ['user_id' => Auth::id(), 'content_id' => $id],
-                ['updated_at' => now()]  // update timestamp if already exists
+                ['user_id' => $userId, 'content_id' => $id],
+                ['updated_at' => now()]
             );
+
+            // Check if liked
+            $isLiked = \App\Models\Like::where('user_id', $userId)
+                ->where('content_id', $id)
+                ->exists();
+
+            // Check if wishlisted
+            $isWishlisted = \App\Models\Wishlist::where('user_id', $userId)
+                ->where('content_id', $id)
+                ->exists();
         }
 
         // return response()->json($content);
@@ -398,6 +413,8 @@ class ContentController extends Controller
         return response()->json([
             'success' => true,
             'data' => $content,
+            'liked' => $isLiked,
+            'wishlisted' => $isWishlisted,
         ]);
     }
 

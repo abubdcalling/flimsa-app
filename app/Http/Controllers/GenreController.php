@@ -22,12 +22,7 @@ class GenreController extends Controller
             // Get genre names
             $genreNames = Genre::pluck('name');
 
-            // Define a closure for genre filtering
-            $genreFilter = function ($query) use ($filterGenre) {
-                if ($filterGenre) {
-                    $query->where('name', $filterGenre);
-                }
-            };
+            
 
             // Latest 1 content
             $latestContent = Content::with('genres:id,name')
@@ -485,6 +480,7 @@ class GenreController extends Controller
     //     }
     // }
 
+    
     public function index()
     {
         $genres = Genre::all();  // gets all columns and all records
