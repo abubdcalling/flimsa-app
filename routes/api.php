@@ -7,6 +7,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoTrackingController;
 use App\Http\Controllers\WishListController;
 use App\Models\WishList;
@@ -76,6 +77,8 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('video-tracking', VideoTrackingController::class);
         Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'show']);
         Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'destroy']);
+        Route::put('users/plan-type', [UserController::class,'updateMyPlanType']);
+    
     });
 
     // Route::middleware(['role:admin,subscriber'])->group(function () {
@@ -93,3 +96,4 @@ Route::get('allcontents', [ContentController::class, 'allcontents']);
 Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']); //for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']); //for season related content
+
