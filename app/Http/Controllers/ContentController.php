@@ -12,9 +12,74 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+    use App\Models\User;
+    use App\Models\Genre;
+    use App\Models\Subscription;
 
 class ContentController extends Controller
 {
+
+
+    public function dashbaord()
+    {
+        try {
+            // Total users
+            $totalUsers = User::count();
+
+            // Total content
+            $totalContents = Content::count();
+
+            // Revenue calculation (sum of all subscription prices for users who have subscriptions)
+            $totalRevenue = DB::table('users')
+                ->join('subscriptions', 'users.plan_type', '=', 'subscriptions.plan_name')
+                ->select(DB::raw('SUM(subscriptions.price) as revenue'))
+                ->value('revenue') ?? 0;
+
+            // Users by plan type
+            $withAdsCount = User::where('plan_type', 'withads')->count();
+            $withoutAdsCount = User::where('plan_type', 'withoutads')->count();
+
+            // Genre percentage breakdown
+            $genreCounts = Content::select('genre_id', DB::raw('count(*) as total'))
+                ->groupBy('genre_id')
+                ->pluck('total', 'genre_id');
+
+            $totalContentCount = $genreCounts->sum();
+
+            $genrePercentages = Genre::whereIn('id', $genreCounts->keys())
+                ->get()
+                ->map(function ($genre) use ($genreCounts, $totalContentCount) {
+                    $percentage = $totalContentCount > 0
+                        ? round(($genreCounts[$genre->id] / $totalContentCount) * 100, 2)
+                        : 0;
+
+                    return [
+                        'genre_id' => $genre->id,
+                        'name' => $genre->name,
+                        'percentage' => $percentage,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_user' => $totalUsers,
+                    'total_content' => $totalContents,
+                    'total_revenue' => $totalRevenue,
+                    'with_ads' => $withAdsCount,
+                    'without_ads' => $withoutAdsCount,
+                    'genre_distribution' => $genrePercentages,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dashboard data could not be retrieved.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function relatedContent($id)
     {
         try {
@@ -159,7 +224,7 @@ class ContentController extends Controller
 
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
-                ->select('id', 'video1', 'title','director_name','profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
+                ->select('id', 'video1', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
                 ->paginate($paginateCount);
 

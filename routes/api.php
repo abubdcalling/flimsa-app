@@ -49,7 +49,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('contents', ContentController::class)->except(['index', 'show']);
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
-        // Route::get('contents/history', [ContentController::class, 'History']);
+        Route::get('dashboard', [ContentController::class, 'dashbaord']);
 
         Route::prefix('settings')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
