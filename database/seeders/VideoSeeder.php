@@ -26,7 +26,7 @@ class VideoSeeder extends Seeder
                 'user_id' => $users[array_rand($users)],
                 'content_id' => $contents[array_rand($contents)],
                 'device_id' => 'DEVICE-' . rand(1000, 9999),
-                'status' => collect(['playing', 'paused', 'completed'])->random(),
+                'status' => collect(['not completed','completed'])->random(),
                 'elapsed_time' => rand(0, 3600), // seconds
             ]);
         }
