@@ -17,6 +17,11 @@ class Content extends Model
         'profile_pic', 'director_name', 'duration'
     ];
 
+    public function subtitles()
+    {
+        return $this->hasMany(Subtitle::class);
+    }
+
     // public function genres(): BelongsTo
     // {
     //     return $this->belongsTo(Genre::class);
@@ -56,6 +61,4 @@ class Content extends Model
     {
         return $this->belongsTo(Genre::class);
     }
-
-
 }
