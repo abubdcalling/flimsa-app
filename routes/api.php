@@ -47,7 +47,7 @@ Route::middleware('auth:api')->group(function () {
 
 
     Route::middleware(['role:admin'])->group(function () {
-        Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
+        // Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
 
         Route::apiResource('contents', ContentController::class)->except(['index','show']);
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
