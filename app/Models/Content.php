@@ -14,10 +14,8 @@ class Content extends Model
     protected $fillable = [
         'video1', 'title', 'description', 'publish',
         'schedule', 'genre_id', 'image', 'view_count',
-        'profile_pic','director_name','duration'
+        'profile_pic', 'director_name', 'duration'
     ];
-
-    
 
     // public function genres(): BelongsTo
     // {
@@ -58,4 +56,6 @@ class Content extends Model
     {
         return $this->belongsTo(Genre::class);
     }
+
+
 }

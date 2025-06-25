@@ -142,72 +142,48 @@ class ContentController extends Controller
         }
     }
 
-    // public function History(Request $request)
-    // {
-    //     try {
-    //         $perPage = $request->query('per_page', 10);
-    //         $userId = $request->input('user_id', Auth::id());
-
-    //         // Optional access rule: allow self or admin
-    //         if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
-    //             return response()->json([
-    //                 'status' => 'error',
-    //                 'message' => 'Unauthorized access.'
-    //             ], 403);
-    //         }
-
-    //         // Get content IDs viewed by user
-    //         $contentIds = History::where('user_id', $userId)
-    //             ->pluck('content_id');
-
-    //         // Fetch contents with optional genre relation
-    //         $contents = Content::with('genre')
-    //             ->whereIn('id', $contentIds)
-    //             ->orderBy('updated_at', 'desc')
-    //             ->paginate($perPage);
-
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'User viewed contents fetched successfully.',
-    //             'data' => $contents
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Failed to fetch user viewed contents.',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
-
-    public function History(Request $request)
+public function historys()
 {
     try {
-        $userId = $request->input('user_id', Auth::id());
+        $userId = Auth::id();
 
-        // Optional access control
-        if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
+        // Get all viewed content IDs for this user
+        $contentIds = History::where('user_id', $userId)->pluck('content_id');
+
+        if ($contentIds->isEmpty()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access.'
-            ], 403);
+                'success' => false,
+                'message' => 'You have not viewed any content yet.'
+            ], 404);
         }
 
-        // Get all content_id viewed by the user
-        $contentIds = History::where('user_id', $userId)
-            ->orderBy('updated_at', 'desc')
-            ->pluck('content_id');
+        // Fetch contents with genres and custom duration info from devices table
+        $contents = Content::with('genres')
+            ->whereIn('id', $contentIds)
+            ->get()
+            ->map(function ($content) use ($userId) {
+                // Get duration from devices table for this user/content
+                $device = DB::table('devices')
+                    ->where('user_id', $userId)
+                    ->where('content_id', $content->id)
+                    ->latest() // get latest entry if multiple exist
+                    ->first();
+
+                // Add duration to content object
+                $content->duration = $device?->duration ?? null;
+
+                return $content;
+            });
 
         return response()->json([
-            'status' => 'success',
-            'message' => 'Content IDs fetched successfully.',
-            'data' => $contentIds
-        ], 200);
+            'success' => true,
+            'message' => 'Your viewed content fetched successfully.',
+            'data' => $contents
+        ]);
     } catch (\Exception $e) {
         return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to fetch content IDs.',
+            'success' => false,
+            'message' => 'Failed to fetch your viewed content.',
             'error' => $e->getMessage()
         ], 500);
     }
@@ -453,22 +429,21 @@ class ContentController extends Controller
     }
 
     public function shows($id)
-{
-    $content = Content::with('genres')->find($id);
+    {
+        $content = Content::with('genres')->find($id);
 
-    if (!$content) {
+        if (!$content) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Content not found.',
+            ], 404);
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => 'Content not found.',
-        ], 404);
+            'success' => true,
+            'data' => $content,
+        ]);
     }
-
-    return response()->json([
-        'success' => true,
-        'data' => $content,
-    ]);
-}
-
 
     // DELETE /api/contents/{id}
 

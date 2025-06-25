@@ -73,7 +73,7 @@ Route::middleware('auth:api')->group(function () {
         // Route::put('update-password', [SettingController::class,'storeOrUpdateForUser']);
         // Route::get('contents/{id}', [ContentController::class,'show']);
 
-        Route::get('contents/history', [ContentController::class, 'History']);
+        Route::get('historys', [ContentController::class, 'historys']);
         Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
 
