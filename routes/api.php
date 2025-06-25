@@ -47,7 +47,7 @@ Route::middleware('auth:api')->group(function () {
 
 
     Route::middleware(['role:admin'])->group(function () {
-        Route::apiResource('contents', ContentController::class)->except(['index', 'show']);
+        Route::apiResource('contents', ContentController::class)->except(['index']);
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
         Route::get('dashboard', [ContentController::class, 'dashbaord']);
