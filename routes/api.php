@@ -52,7 +52,7 @@ Route::middleware('auth:api')->group(function () {
 
         Route::post('subtitles/{contentId}', [SubtitleController::class, 'store']);
         Route::get('subtitles', [SubtitleController::class, 'index']);
-        Route::get('subtitles/{id}', [SubtitleController::class,'show']);
+        // Route::get('subtitles/{id}', [SubtitleController::class,'show']);
         Route::delete('subtitles/{id}', [SubtitleController::class, 'destroy']);
 
         Route::apiResource('contents', ContentController::class)->except(['index', 'show']);
@@ -101,3 +101,4 @@ Route::get('allcontents', [ContentController::class, 'allcontents']);
 Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
+Route::get('subtitles/{id}', [SubtitleController::class,'show']);
