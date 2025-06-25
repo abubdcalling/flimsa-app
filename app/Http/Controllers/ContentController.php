@@ -142,43 +142,77 @@ class ContentController extends Controller
         }
     }
 
+    // public function History(Request $request)
+    // {
+    //     try {
+    //         $perPage = $request->query('per_page', 10);
+    //         $userId = $request->input('user_id', Auth::id());
+
+    //         // Optional access rule: allow self or admin
+    //         if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Unauthorized access.'
+    //             ], 403);
+    //         }
+
+    //         // Get content IDs viewed by user
+    //         $contentIds = History::where('user_id', $userId)
+    //             ->pluck('content_id');
+
+    //         // Fetch contents with optional genre relation
+    //         $contents = Content::with('genre')
+    //             ->whereIn('id', $contentIds)
+    //             ->orderBy('updated_at', 'desc')
+    //             ->paginate($perPage);
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'User viewed contents fetched successfully.',
+    //             'data' => $contents
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to fetch user viewed contents.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+
     public function History(Request $request)
-    {
-        try {
-            $perPage = $request->query('per_page', 10);
-            $userId = $request->input('user_id', Auth::id());
+{
+    try {
+        $userId = $request->input('user_id', Auth::id());
 
-            // Optional access rule: allow self or admin
-            if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Unauthorized access.'
-                ], 403);
-            }
-
-            // Get content IDs viewed by user
-            $contentIds = History::where('user_id', $userId)
-                ->pluck('content_id');
-
-            // Fetch contents with optional genre relation
-            $contents = Content::with('genre')
-                ->whereIn('id', $contentIds)
-                ->orderBy('updated_at', 'desc')
-                ->paginate($perPage);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User viewed contents fetched successfully.',
-                'data' => $contents
-            ], 200);
-        } catch (\Exception $e) {
+        // Optional access control
+        if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch user viewed contents.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Unauthorized access.'
+            ], 403);
         }
+
+        // Get all content_id viewed by the user
+        $contentIds = History::where('user_id', $userId)
+            ->orderBy('updated_at', 'desc')
+            ->pluck('content_id');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Content IDs fetched successfully.',
+            'data' => $contentIds
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to fetch content IDs.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function upcomingContent(Request $request): JsonResponse
     {
