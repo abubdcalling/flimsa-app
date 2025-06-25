@@ -418,6 +418,24 @@ class ContentController extends Controller
         ]);
     }
 
+    public function shows($id)
+{
+    $content = Content::with('genres')->find($id);
+
+    if (!$content) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Content not found.',
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $content,
+    ]);
+}
+
+
     // DELETE /api/contents/{id}
 
     // public function update(Request $request, $id)
