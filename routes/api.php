@@ -51,6 +51,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
         Route::get('dashboard', [ContentController::class, 'dashbaord']);
+        Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
 
         Route::prefix('settings')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
