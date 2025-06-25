@@ -99,3 +99,4 @@ Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']); //for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']); //for season related content
 
+
