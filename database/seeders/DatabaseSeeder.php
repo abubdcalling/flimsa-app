@@ -21,14 +21,18 @@ class DatabaseSeeder extends Seeder
 
         //  $this->call(UserSeeder::class);
 
+        // $this->call([
+        //     UserSeeder::class,
+        //     GenreSeeder::class,
+        //     ContentSeeder::class,
+        //     // ContentSeeder::class,
+        //     HistorySeeder::class,
+        //     LikeSeeder::class,
+        //     WishlistSeeder::class
+        // ]);
+
         $this->call([
-            UserSeeder::class,
-            GenreSeeder::class,
-            ContentSeeder::class,
-            // ContentSeeder::class,
-            HistorySeeder::class,
-            LikeSeeder::class,
-            WishlistSeeder::class
+            VideoSeeder::class,
         ]);
     }
 }
