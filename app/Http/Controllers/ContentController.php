@@ -58,14 +58,64 @@ class ContentController extends Controller
                     ];
                 });
 
+            // Monthly revenue breakdown by plan type
+            $currentYear = Carbon::now()->year;
+
+            $monthlyRevenue = DB::table('users')
+                ->join('subscriptions', 'users.plan_type', '=', 'subscriptions.plan_name')
+                ->whereIn('users.plan_type', ['withads', 'withoutads'])
+                ->whereYear('users.created_at', $currentYear)
+                ->select(
+                    DB::raw('MONTH(users.created_at) as month'),
+                    'users.plan_type',
+                    DB::raw('SUM(subscriptions.price) as total')
+                )
+                ->groupBy(DB::raw('MONTH(users.created_at)'), 'users.plan_type')
+                ->orderBy(DB::raw('MONTH(users.created_at)'))
+                ->get()
+                ->groupBy('plan_type');
+
+            $months = range(1, 12);
+            $monthNames = [
+                1 => 'Jan',
+                2 => 'Feb',
+                3 => 'Mar',
+                4 => 'Apr',
+                5 => 'May',
+                6 => 'Jun',
+                7 => 'Jul',
+                8 => 'Aug',
+                9 => 'Sep',
+                10 => 'Oct',
+                11 => 'Nov',
+                12 => 'Dec',
+            ];
+
+            $withAdsMonthly = [];
+            $withoutAdsMonthly = [];
+
+            foreach ($months as $month) {
+                $withAdsMonthly[] = [
+                    'month' => $monthNames[$month],
+                    'revenue' => $monthlyRevenue->get('withads')?->firstWhere('month', $month)->total ?? 0,
+                ];
+
+                $withoutAdsMonthly[] = [
+                    'month' => $monthNames[$month],
+                    'revenue' => $monthlyRevenue->get('withoutads')?->firstWhere('month', $month)->total ?? 0,
+                ];
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'total_user' => $totalUsers,
                     'total_content' => $totalContents,
                     'total_revenue' => $totalRevenue,
-                    'with_ads' => $withAdsCount,
-                    'without_ads' => $withoutAdsCount,
+                    'monthly_revenue' => [
+                        'with_ads' => $withAdsMonthly,
+                        'without_ads' => $withoutAdsMonthly,
+                    ],
                     'genre_distribution' => $genrePercentages,
                 ]
             ]);
