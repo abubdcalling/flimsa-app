@@ -348,18 +348,7 @@ class ContentController extends Controller
     public function store(Request $request)
     {
         try {
-            $videoName = null;
-            if ($request->hasFile('video1')) {
-                $videoFile = $request->file('video1');
-                $videoPath = $videoFile->store('videos', 's3');  // Store in 'videos/' folder on S3
-
-                if (!$videoPath) {
-                    throw new \Exception('Failed to upload video to S3');
-                }
-
-                Storage::disk('s3')->setVisibility($videoPath, 'public');
-                $videoName = Storage::disk('s3')->url($videoPath);  // Get full S3 URL
-            }
+           
 
             $imageName = null;
             if ($request->hasFile('image')) {
@@ -389,7 +378,7 @@ class ContentController extends Controller
             }
 
             $content = Content::create([
-                'video1' => $videoName,  // S3 URL
+                'video1' => $request->input('file_url'),  // S3 URL
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'publish' => $request->input('publish'),
