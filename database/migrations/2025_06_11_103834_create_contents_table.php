@@ -1,3 +1,5 @@
+
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -13,12 +15,12 @@ return new class extends Migration
     {
         Schema::create('contents', function (Blueprint $table) {
             $table->id();
-            $table->string('video1');
+            $table->string('video1')->nullable(); // Video URL or path, nullable if optional
             $table->longText('title');
             $table->longText('description');
-            $table->enum('publish', ['public', 'private', 'schedule'])->default('private');
-            $table->dateTime('schedule');
-            $table->foreignId('genre_id')->constrained('genres')->onDelete('cascade');
+            $table->enum('publish', ['public', 'private', 'schedule'])->default('private')->index();
+            $table->dateTime('schedule')->nullable(); // Nullable because only used if 'schedule' publish type
+            $table->foreignId('genre_id')->constrained('genres')->onDelete('cascade')->index();
             $table->string('image')->nullable();
             $table->timestamps();
         });
