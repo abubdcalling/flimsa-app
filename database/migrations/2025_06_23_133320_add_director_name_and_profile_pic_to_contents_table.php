@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('contents', function (Blueprint $table) {
-            $table->string('director_name')->after('genre_id');
-            $table->string('profile_pic')->after('director_name');
+            $table->string('director_name')->after('genre_id')->nullable();
+         $table->string('profile_pic')->after('director_name')->nullable();
         });
     }
 

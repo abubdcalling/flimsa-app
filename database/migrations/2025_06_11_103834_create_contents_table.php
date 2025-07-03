@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -15,12 +14,12 @@ return new class extends Migration
     {
         Schema::create('contents', function (Blueprint $table) {
             $table->id();
-            $table->string('video1')->nullable(); // Video URL or path, nullable if optional
+            $table->json('s3_details_json')->nullable();
             $table->longText('title');
             $table->longText('description');
             $table->enum('publish', ['public', 'private', 'schedule'])->default('private')->index();
-            $table->dateTime('schedule')->nullable(); // Nullable because only used if 'schedule' publish type
-            $table->foreignId('genre_id')->constrained('genres')->onDelete('cascade')->index();
+            $table->dateTime('schedule')->nullable();  // Nullable because only used if 'schedule' publish type
+         $table->foreignId('genre_id')->nullable()->constrained('genres')->onDelete('cascade')->index();
             $table->string('image')->nullable();
             $table->timestamps();
         });

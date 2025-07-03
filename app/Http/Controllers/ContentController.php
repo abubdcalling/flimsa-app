@@ -192,53 +192,43 @@ class ContentController extends Controller
         }
     }
 
-public function historys()
-{
-    try {
-        $userId = Auth::id();
+    public function History(Request $request)
+    {
+        try {
+            $perPage = $request->query('per_page', 10);
+            $userId = $request->input('user_id', Auth::id());
 
-        // Get all viewed content IDs for this user
-        $contentIds = History::where('user_id', $userId)->pluck('content_id');
+            // Optional access rule: allow self or admin
+            if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
 
-        if ($contentIds->isEmpty()) {
+            // Get content IDs viewed by user
+            $contentIds = History::where('user_id', $userId)
+                ->pluck('content_id');
+
+            // Fetch contents with optional genre relation
+            $contents = Content::with('genre')
+                ->whereIn('id', $contentIds)
+                ->orderBy('updated_at', 'desc')
+                ->paginate($perPage);
+
             return response()->json([
-                'success' => false,
-                'message' => 'You have not viewed any content yet.'
-            ], 404);
+                'status' => 'success',
+                'message' => 'User viewed contents fetched successfully.',
+                'data' => $contents
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch user viewed contents.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Fetch contents with genres and custom duration info from devices table
-        $contents = Content::with('genres')
-            ->whereIn('id', $contentIds)
-            ->get()
-            ->map(function ($content) use ($userId) {
-                // Get duration from devices table for this user/content
-                $device = DB::table('devices')
-                    ->where('user_id', $userId)
-                    ->where('content_id', $content->id)
-                    ->latest() // get latest entry if multiple exist
-                    ->first();
-
-                // Add duration to content object
-                $content->duration = $device?->duration ?? null;
-
-                return $content;
-            });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Your viewed content fetched successfully.',
-            'data' => $contents
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch your viewed content.',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
-
 
     public function upcomingContent(Request $request): JsonResponse
     {
@@ -388,7 +378,7 @@ public function historys()
             }
 
             $content = Content::create([
-                'video1' => $request->input('file_url'),  // S3 URL
+                's3_details_json' => $request->input('s3_details_json'),  // S3 URL
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'publish' => $request->input('publish'),
@@ -464,23 +454,6 @@ public function historys()
             'data' => $content,
             'liked' => $isLiked,
             'wishlisted' => $isWishlisted,
-        ]);
-    }
-
-    public function shows($id)
-    {
-        $content = Content::with('genres')->find($id);
-
-        if (!$content) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Content not found.',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $content,
         ]);
     }
 

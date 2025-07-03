@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             VideoSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }
