@@ -14,10 +14,13 @@ class Content extends Model
     protected $fillable = [
         'video1', 'title', 'description', 'publish',
         'schedule', 'genre_id', 'image', 'view_count',
-        'profile_pic','director_name'
+        'profile_pic', 'director_name', 'duration'
     ];
 
-    
+    public function subtitles()
+    {
+        return $this->hasMany(Subtitle::class);
+    }
 
     // public function genres(): BelongsTo
     // {

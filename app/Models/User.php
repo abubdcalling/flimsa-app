@@ -93,4 +93,14 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Wishlist::class);
     }
+
+    // public function historiess()
+    // {
+    //     return $this->hasMany(History::class);
+    // }
+
+    public function contents()
+    {
+        return $this->hasManyThrough(Content::class, History::class, 'user_id', 'id', 'id', 'content_id');
+    }
 }

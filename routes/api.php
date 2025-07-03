@@ -7,6 +7,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SubtitleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoTrackingController;
 use App\Http\Controllers\WishListController;
@@ -47,10 +48,18 @@ Route::middleware('auth:api')->group(function () {
 
 
     Route::middleware(['role:admin'])->group(function () {
-        Route::apiResource('contents', ContentController::class)->except(['index']);
+        // Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
+
+        Route::post('subtitles/{contentId}', [SubtitleController::class, 'store']);
+        Route::get('subtitles', [SubtitleController::class, 'index']);
+        // Route::get('subtitles/{id}', [SubtitleController::class,'show']);
+        Route::delete('subtitles/{id}', [SubtitleController::class, 'destroy']);
+
+        Route::apiResource('contents', ContentController::class)->except(['index', 'show']);
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
         Route::get('dashboard', [ContentController::class, 'dashbaord']);
+        Route::get('content/{id}', [ContentController::class, 'shows']);
 
         Route::prefix('settings')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
@@ -60,7 +69,6 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
-
         Route::post('updateInfo', [SettingController::class, 'storeOrUpdateForUser']);
         Route::get('updateInfo', [SettingController::class, 'ShowsForUser']);
         Route::put('contents/{content}/like', [ContentController::class, 'updateLike']);
@@ -70,33 +78,27 @@ Route::middleware('auth:api')->group(function () {
         // Route::put('update-password', [SettingController::class,'storeOrUpdateForUser']);
         // Route::get('contents/{id}', [ContentController::class,'show']);
 
-        Route::get('contents/history', [ContentController::class, 'History']);
+        Route::get('historys', [ContentController::class, 'historys']);
         Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
 
         Route::apiResource('video-tracking', VideoTrackingController::class);
         Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'show']);
         Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'destroy']);
-        Route::put('users/plan-type', [UserController::class,'updateMyPlanType']);
+        Route::put('users/plan-type', [UserController::class, 'updateMyPlanType']);
         // Route::get('content/{id}', [ContentController::class, 'individualContent']);
-
-    
     });
 
     // Route::middleware(['role:admin,subscriber'])->group(function () {
     //     Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
 
     // });
-
-
-
 });
 
 Route::get('subscriptions', [SubscriptionController::class, 'index']);
 Route::get('contents', [ContentController::class, 'index']);
 Route::get('allcontents', [ContentController::class, 'allcontents']);
 Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
-Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']); //for movie related content
-Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']); //for season related content
-
-
+Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
+Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
+Route::get('subtitles/{id}', [SubtitleController::class,'show']);
