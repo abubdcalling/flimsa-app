@@ -257,6 +257,7 @@ class ContentController extends Controller
 
     public function index(Request $request)
     {
+       
         try {
             $paginateCount = $request->get('paginate_count', 10);
             $userId = $request->user()->id ?? null;
@@ -270,11 +271,14 @@ class ContentController extends Controller
 
             // [content_id => total_likes]
 
+            
+
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
-                ->select('id', 'video1', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
+                ->select('id', 's3_details_json', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
                 ->paginate($paginateCount);
+                
 
             $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped) {
                 // Rename view_count to total_view
