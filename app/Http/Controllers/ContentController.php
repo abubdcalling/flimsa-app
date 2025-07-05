@@ -432,25 +432,25 @@ class ContentController extends Controller
         $isWishlisted = false;
 
         // Log view and fetch like/wishlist if user is logged in
-        if (Auth::check()) {
-            $userId = Auth::id();
+        // if (Auth::check()) {
+        //     $userId = Auth::id();
 
-            // Log history
-            History::updateOrCreate(
-                ['user_id' => $userId, 'content_id' => $id],
-                ['updated_at' => now()]
-            );
+        //     // Log history
+        //     History::updateOrCreate(
+        //         ['user_id' => $userId, 'content_id' => $id],
+        //         ['updated_at' => now()]
+        //     );
 
-            // Check if liked
-            $isLiked = \App\Models\Like::where('user_id', $userId)
-                ->where('content_id', $id)
-                ->exists();
+        //     // Check if liked
+        //     $isLiked = \App\Models\Like::where('user_id', $userId)
+        //         ->where('content_id', $id)
+        //         ->exists();
 
-            // Check if wishlisted
-            $isWishlisted = \App\Models\WishList::where('user_id', $userId)
-                ->where('content_id', $id)
-                ->exists();
-        }
+        //     // Check if wishlisted
+        //     $isWishlisted = \App\Models\WishList::where('user_id', $userId)
+        //         ->where('content_id', $id)
+        //         ->exists();
+        // }
 
         // return response()->json($content);
 
