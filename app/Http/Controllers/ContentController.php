@@ -275,7 +275,7 @@ class ContentController extends Controller
 
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
-                ->select('id', 's3_details_json', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
+                ->select('id', 'video1', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
                 ->paginate($paginateCount);
                 
@@ -382,7 +382,7 @@ class ContentController extends Controller
             }
 
             $content = Content::create([
-                's3_details_json' => $request->input('s3_details_json'),  // S3 URL
+                'video1' => $request->input('video1'),  // S3 URL
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
                 'publish' => $request->input('publish'),

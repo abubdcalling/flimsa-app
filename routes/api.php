@@ -59,7 +59,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
         Route::get('dashboard', [ContentController::class, 'dashbaord']);
-        Route::get('content/{id}', [ContentController::class, 'shows']);
+        // Route::get('content/{id}', [ContentController::class, 'shows']);
 
         Route::prefix('settings')->group(function () {
             Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);

@@ -12,12 +12,12 @@ class Content extends Model
     use HasFactory;
 
     protected $fillable = [
-        's3_details_json', 'title', 'description', 'publish',
+        'video1', 'title', 'description', 'publish',
         'schedule', 'genre_id', 'image', 'view_count',
         'profile_pic', 'director_name', 'duration'
     ];
     protected $casts = [
-        's3_details_json' => 'array', // Decode JSON to array on retrieval
+        'video1' => 'array', // Decode JSON to array on retrieval
     ];
 
     public function subtitles()

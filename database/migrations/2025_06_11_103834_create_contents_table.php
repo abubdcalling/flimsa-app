@@ -14,7 +14,7 @@ return new class extends Migration {
     {
         Schema::create('contents', function (Blueprint $table) {
             $table->id();
-            $table->json('s3_details_json')->nullable();
+            $table->json('video1')->nullable();
             $table->longText('title');
             $table->longText('description');
             $table->enum('publish', ['public', 'private', 'schedule'])->default('private')->index();

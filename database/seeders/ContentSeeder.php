@@ -25,7 +25,7 @@ class ContentSeeder extends Seeder
                 : null;
 
             Content::create([
-                's3_details_json' => json_encode([
+                'video1' => json_encode([
                     'video_path' => 'videos/' . Str::uuid() . '.mp4',
                     'size' => $faker->numberBetween(1_000_000, 50_000_000), // 1MB–50MB
                     'duration' => $faker->randomFloat(2, 30, 3600), // 30s to 1hr
