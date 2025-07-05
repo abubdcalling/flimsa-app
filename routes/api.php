@@ -67,7 +67,7 @@ Route::middleware('auth:api')->group(function () {
             Route::get('info', [SettingController::class, 'index']);
         });
 
-                // Route::get('content/{id}', [ContentController::class, 'show']);
+                Route::get('content/{id}', [ContentController::class, 'show']);
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
