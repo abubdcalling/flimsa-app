@@ -414,6 +414,7 @@ class ContentController extends Controller
     // GET /api/contents/{id}
     public function show($id)
     {
+        // return $id;
         $content = Content::with('genres')->find($id);
 
         if (!$content) {

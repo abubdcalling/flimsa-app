@@ -66,6 +66,8 @@ Route::middleware('auth:api')->group(function () {
             Route::post('info', [SettingController::class, 'storeOrUpdate']);
             Route::get('info', [SettingController::class, 'index']);
         });
+
+                Route::get('content/{id}', [ContentController::class, 'show']);
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
