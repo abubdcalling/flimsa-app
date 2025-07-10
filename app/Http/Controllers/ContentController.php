@@ -433,16 +433,20 @@ class ContentController extends Controller
         // Initialize like/wishlist info
         $isLiked = false;
         $isWishlisted = false;
+        $elapsedTime = null;
 
         // Log view and fetch like/wishlist if user is logged in
         if (Auth::check()) {
             $userId = Auth::id();
 
-            // Log history
-            History::updateOrCreate(
-                ['user_id' => $userId, 'content_id' => $id],
-                ['updated_at' => now()]
-            );
+        // Log history or update timestamp
+        $history = History::updateOrCreate(
+            ['user_id' => $userId, 'content_id' => $id],
+            ['updated_at' => now()]
+        );
+
+                    // Fetch elapsed_time
+        $elapsedTime = $history->elapsed_time;
 
             // Check if liked
             $isLiked = \App\Models\Like::where('user_id', $userId)
@@ -462,6 +466,7 @@ class ContentController extends Controller
             'data' => $content,
             'liked' => $isLiked,
             'wishlisted' => $isWishlisted,
+            'elapsed_time' => $elapsedTime,
         ]);
     }
 
