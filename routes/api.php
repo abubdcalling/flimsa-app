@@ -80,7 +80,7 @@ Route::middleware('auth:api')->group(function () {
         // Route::put('update-password', [SettingController::class,'storeOrUpdateForUser']);
         // Route::get('contents/{id}', [ContentController::class,'show']);
 
-        Route::get('historys', [ContentController::class, 'History']);
+        // Route::get('historys', [ContentController::class, 'History']);
         Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
 
@@ -104,3 +104,4 @@ Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
 Route::get('subtitles/{id}', [SubtitleController::class,'show']);
+Route::get('historys', [ContentController::class, 'History']);

@@ -197,6 +197,9 @@ class ContentController extends Controller
         try {
             $perPage = $request->query('per_page', 10);
             $userId = $request->input('user_id', Auth::id());
+              $device_id = $request->query('device_id');
+            //   return $device_id;
+        
 
             // Optional access rule: allow self or admin
             if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
@@ -412,7 +415,7 @@ class ContentController extends Controller
     }
 
     // GET /api/contents/{id}
-    public function show($id)
+    public function show($id , Request $request)
     {
         // return $id;
         $content = Content::with('genres')->find($id);
@@ -432,25 +435,25 @@ class ContentController extends Controller
         $isWishlisted = false;
 
         // Log view and fetch like/wishlist if user is logged in
-        // if (Auth::check()) {
-        //     $userId = Auth::id();
+        if (Auth::check()) {
+            $userId = Auth::id();
 
-        //     // Log history
-        //     History::updateOrCreate(
-        //         ['user_id' => $userId, 'content_id' => $id],
-        //         ['updated_at' => now()]
-        //     );
+            // Log history
+            History::updateOrCreate(
+                ['user_id' => $userId, 'content_id' => $id],
+                ['updated_at' => now()]
+            );
 
-        //     // Check if liked
-        //     $isLiked = \App\Models\Like::where('user_id', $userId)
-        //         ->where('content_id', $id)
-        //         ->exists();
+            // Check if liked
+            $isLiked = \App\Models\Like::where('user_id', $userId)
+                ->where('content_id', $id)
+                ->exists();
 
-        //     // Check if wishlisted
-        //     $isWishlisted = \App\Models\WishList::where('user_id', $userId)
-        //         ->where('content_id', $id)
-        //         ->exists();
-        // }
+            // Check if wishlisted
+            $isWishlisted = \App\Models\WishList::where('user_id', $userId)
+                ->where('content_id', $id)
+                ->exists();
+        }
 
         // return response()->json($content);
 
