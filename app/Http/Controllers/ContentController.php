@@ -209,19 +209,19 @@ class ContentController extends Controller
             }
 
             // Get history records for user (optional filter by device_id)
-            $historyQuery = History::where('user_id', $userId);
-            if ($device_id) {
-                $historyQuery->where('device_id', $device_id);
-            }
+            // $historyQuery = History::where('user_id', $userId);
+            // if ($device_id) {
+            //     $historyQuery->where('device_id', $device_id);
+            // }
 
-            $history = $historyQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
+            // $history = $historyQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
 
-            // Get content IDs
-            $contentIds = $history->keys();
+            // // Get content IDs
+            // $contentIds = $history->keys();
 
-            // Get content IDs viewed by user
-            $contentIds = History::where('user_id', $userId)
-                ->pluck('content_id');
+            // // Get content IDs viewed by user
+            // $contentIds = History::where('user_id', $userId)
+            //     ->pluck('content_id');
 
             // Fetch contents with optional genre relation
             $contents = Content::with('genre')
