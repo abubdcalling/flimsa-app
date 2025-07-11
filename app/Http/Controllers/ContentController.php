@@ -7,6 +7,7 @@ use App\Models\Genre;
 use App\Models\History;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Models\Video;
 use Carbon\Carbon;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\JsonResponse;
@@ -198,7 +199,6 @@ class ContentController extends Controller
             $perPage = $request->query('per_page', 10);
             $userId = $request->input('user_id', Auth::id());
             $device_id = $request->query('device_id');
-            //   return $device_id;
 
             // Optional access rule: allow self or admin
             if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
@@ -208,32 +208,36 @@ class ContentController extends Controller
                 ], 403);
             }
 
-            // Get history records for user (optional filter by device_id)
-            // $historyQuery = History::where('user_id', $userId);
-            // if ($device_id) {
-            //     $historyQuery->where('device_id', $device_id);
-            // }
+            // ✅ Fetch video tracking records (from videos table)
+            $videoQuery = Video::where('user_id', $userId);
+            if ($device_id) {
+                $videoQuery->where('device_id', $device_id);
+            }
 
-            // $history = $historyQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
+            $videoData = $videoQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
 
-            // // Get content IDs
-            // $contentIds = $history->keys();
+            // ✅ Get the content IDs
+            $contentIds = $videoData->keys();
 
-            // // Get content IDs viewed by user
-            // $contentIds = History::where('user_id', $userId)
-            //     ->pluck('content_id');
+            if ($contentIds->isEmpty()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'No video tracking records found.',
+                    'data' => []
+                ]);
+            }
 
-            // Fetch contents with optional genre relation
+            // ✅ Fetch contents with genre
             $contents = Content::with('genre')
                 ->whereIn('id', $contentIds)
                 ->orderBy('updated_at', 'desc')
                 ->paginate($perPage);
 
-                    // Add elapsed_time to each content item
-        // $contents->getCollection()->transform(function ($content) use ($history) {
-        //     $content->elapsed_time = $history[$content->id]->elapsed_time ?? null;
-        //     return $content;
-        // });    
+            // ✅ Attach elapsed_time to each content item
+            $contents->getCollection()->transform(function ($content) use ($videoData) {
+                $content->elapsed_time = $videoData[$content->id]->elapsed_time ?? null;
+                return $content;
+            });
 
             return response()->json([
                 'status' => 'success',
