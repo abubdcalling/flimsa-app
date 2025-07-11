@@ -230,10 +230,10 @@ class ContentController extends Controller
                 ->paginate($perPage);
 
                     // Add elapsed_time to each content item
-        $contents->getCollection()->transform(function ($content) use ($history) {
-            $content->elapsed_time = $history[$content->id]->elapsed_time ?? null;
-            return $content;
-        });    
+        // $contents->getCollection()->transform(function ($content) use ($history) {
+        //     $content->elapsed_time = $history[$content->id]->elapsed_time ?? null;
+        //     return $content;
+        // });    
 
             return response()->json([
                 'status' => 'success',
