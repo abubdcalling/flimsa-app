@@ -197,9 +197,8 @@ class ContentController extends Controller
         try {
             $perPage = $request->query('per_page', 10);
             $userId = $request->input('user_id', Auth::id());
-              $device_id = $request->query('device_id');
+            $device_id = $request->query('device_id');
             //   return $device_id;
-        
 
             // Optional access rule: allow self or admin
             if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
@@ -208,6 +207,17 @@ class ContentController extends Controller
                     'message' => 'Unauthorized access.'
                 ], 403);
             }
+
+            // Get history records for user (optional filter by device_id)
+            $historyQuery = History::where('user_id', $userId);
+            if ($device_id) {
+                $historyQuery->where('device_id', $device_id);
+            }
+
+            $history = $historyQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
+
+            // Get content IDs
+            $contentIds = $history->keys();
 
             // Get content IDs viewed by user
             $contentIds = History::where('user_id', $userId)
@@ -218,6 +228,12 @@ class ContentController extends Controller
                 ->whereIn('id', $contentIds)
                 ->orderBy('updated_at', 'desc')
                 ->paginate($perPage);
+
+                    // Add elapsed_time to each content item
+        $contents->getCollection()->transform(function ($content) use ($history) {
+            $content->elapsed_time = $history[$content->id]->elapsed_time ?? null;
+            return $content;
+        });    
 
             return response()->json([
                 'status' => 'success',
@@ -260,7 +276,6 @@ class ContentController extends Controller
 
     public function index(Request $request)
     {
-       
         try {
             $paginateCount = $request->get('paginate_count', 10);
             $userId = $request->user()->id ?? null;
@@ -274,14 +289,11 @@ class ContentController extends Controller
 
             // [content_id => total_likes]
 
-            
-
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
                 ->select('id', 'video1', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
                 ->paginate($paginateCount);
-                
 
             $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped) {
                 // Rename view_count to total_view
@@ -355,8 +367,6 @@ class ContentController extends Controller
     public function store(Request $request)
     {
         try {
-           
-
             $imageName = null;
             if ($request->hasFile('image')) {
                 $imageFile = $request->file('image');
@@ -415,7 +425,7 @@ class ContentController extends Controller
     }
 
     // GET /api/contents/{id}
-    public function show($id , Request $request)
+    public function show($id, Request $request)
     {
         // return $id;
         $content = Content::with('genres')->find($id);
@@ -439,14 +449,14 @@ class ContentController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
 
-        // Log history or update timestamp
-        $history = History::updateOrCreate(
-            ['user_id' => $userId, 'content_id' => $id],
-            ['updated_at' => now()]
-        );
+            // Log history or update timestamp
+            $history = History::updateOrCreate(
+                ['user_id' => $userId, 'content_id' => $id],
+                ['updated_at' => now()]
+            );
 
-                    // Fetch elapsed_time
-        $elapsedTime = $history->elapsed_time;
+            // Fetch elapsed_time
+            $elapsedTime = $history->elapsed_time;
 
             // Check if liked
             $isLiked = \App\Models\Like::where('user_id', $userId)

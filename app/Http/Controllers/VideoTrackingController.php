@@ -27,7 +27,7 @@ class VideoTrackingController extends Controller
             // Validate input
             $validated = $request->validate([
                 'user_id' => 'required|exists:users,id',
-                'device_id' => 'required|integer',
+                'device_id' => 'required|string',
                 'content_id' => 'required|exists:contents,id',
                 'status' => 'required|in:completed,not completed',
                 'elapsed_time' => 'required|string',  // Assuming it's seconds as string (e.g., "360")
