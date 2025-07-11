@@ -53,7 +53,7 @@ Route::middleware('auth:api')->group(function () {
         // Route::get('subtitles/{id}', [SubtitleController::class,'show']);
         Route::delete('subtitles/{id}', [SubtitleController::class, 'destroy']);
 
-        Route::apiResource('contents', ContentController::class)->except(['index', 'show']);
+        Route::apiResource('contents', ContentController::class);
         Route::apiResource('genres', GenreController::class)->except(['Home', 'index']);
         Route::apiResource('subscriptions', SubscriptionController::class)->except(['index']);
         Route::get('dashboard', [ContentController::class, 'dashbaord']);
