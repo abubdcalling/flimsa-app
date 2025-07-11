@@ -45,8 +45,6 @@ Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
 
 Route::middleware('auth:api')->group(function () {
-
-
     Route::middleware(['role:admin'])->group(function () {
         // Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
 
@@ -67,7 +65,7 @@ Route::middleware('auth:api')->group(function () {
             Route::get('info', [SettingController::class, 'index']);
         });
 
-                Route::get('content/{id}', [ContentController::class, 'show']);
+        Route::get('content/{id}', [ContentController::class, 'show']);
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
@@ -91,6 +89,10 @@ Route::middleware('auth:api')->group(function () {
         // Route::get('content/{id}', [ContentController::class, 'individualContent']);
     });
 
+    Route::middleware(['role:admin,subscriber'])->group(function () {
+        Route::get('contents/{id}', [ContentController::class, 'show']);
+    });
+
     // Route::middleware(['role:admin,subscriber'])->group(function () {
     //     Route::put('password', [SettingController::class, 'storeOrUpdatePassword']);
 
@@ -103,5 +105,5 @@ Route::get('allcontents', [ContentController::class, 'allcontents']);
 Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
-Route::get('subtitles/{id}', [SubtitleController::class,'show']);
+Route::get('subtitles/{id}', [SubtitleController::class, 'show']);
 Route::get('historys', [ContentController::class, 'History']);
