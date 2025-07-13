@@ -91,6 +91,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware(['role:admin,subscriber'])->group(function () {
         Route::get('contents/{id}', [ContentController::class, 'show']);
+        Route::get('historys', [ContentController::class, 'History']);
     });
 
     // Route::middleware(['role:admin,subscriber'])->group(function () {
@@ -106,4 +107,4 @@ Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
 Route::get('subtitles/{id}', [SubtitleController::class, 'show']);
-Route::get('historys', [ContentController::class, 'History']);
+// Route::get('historys', [ContentController::class, 'History']);

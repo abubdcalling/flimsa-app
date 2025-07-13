@@ -193,30 +193,191 @@ class ContentController extends Controller
         }
     }
 
+    // public function History(Request $request)
+    // {
+    //     try {
+    //         $perPage = $request->query('per_page', 10);
+    //         $userId = $request->input('user_id', Auth::id());
+    //         $device_id = $request->query('device_id');
+
+    //         // Optional access rule: allow self or admin
+    //         if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Unauthorized access.'
+    //             ], 403);
+    //         }
+
+    //         // ✅ Fetch video tracking records (from videos table)
+    //         $videoQuery = Video::where('user_id', $userId);
+    //         if ($device_id) {
+    //             $videoQuery->where('device_id', $device_id);
+    //         }
+
+    //         $videoData = $videoQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
+
+    //         // ✅ Get the content IDs
+    //         $contentIds = $videoData->keys();
+
+    //         if ($contentIds->isEmpty()) {
+    //             return response()->json([
+    //                 'status' => 'success',
+    //                 'message' => 'No video tracking records found.',
+    //                 'data' => []
+    //             ]);
+    //         }
+
+    //         // ✅ Fetch contents with genre
+    //         $contents = Content::with('genre')
+    //             ->whereIn('id', $contentIds)
+    //             ->orderBy('updated_at', 'desc')
+    //             ->paginate($perPage);
+
+    //         // ✅ Attach elapsed_time to each content item
+    //         $contents->getCollection()->transform(function ($content) use ($videoData) {
+    //             $content->elapsed_time = $videoData[$content->id]->elapsed_time ?? null;
+    //             return $content;
+    //         });
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'User viewed contents fetched successfully.',
+    //             'data' => $contents
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to fetch user viewed contents.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    // public function History(Request $request)
+    // {
+    //     try {
+    //         // ✅ Authentication check
+    //         if (!Auth::check()) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Unauthenticated access. Please log in.'
+    //             ], 401);
+    //         }
+
+    //         $perPage = $request->query('per_page', 10);
+    //         $userId = $request->input('user_id', Auth::id());
+    //         $device_id = $request->query('device_id');
+    //         $contentIdsFilter = $request->query('content_id');
+
+    //         // Normalize content_id (single or array)
+    //         if ($contentIdsFilter && !is_array($contentIdsFilter)) {
+    //             $contentIdsFilter = [$contentIdsFilter];
+    //         }
+
+    //         $authUser = Auth::user();
+
+    //         // ✅ Authorization: Allow self or subscribers
+    //         if ($userId != $authUser->id && !$authUser->hasRole('subscriber')) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Unauthorized access.'
+    //             ], 403);
+    //         }
+
+    //         // ✅ Fetch latest video tracking records
+    //         $latestVideoIds = Video::selectRaw('MAX(id) as id')
+    //             ->where('user_id', $userId)
+    //             ->when($device_id, fn($q) => $q->where('device_id', $device_id))
+    //             ->when($contentIdsFilter, fn($q) => $q->whereIn('content_id', $contentIdsFilter))
+    //             ->groupBy('content_id')
+    //             ->pluck('id');
+
+    //         $videoData = Video::whereIn('id', $latestVideoIds)
+    //             ->get(['content_id', 'elapsed_time'])
+    //             ->keyBy('content_id');
+
+    //         $contentIds = $videoData->keys();
+
+    //         if ($contentIds->isEmpty()) {
+    //             return response()->json([
+    //                 'status' => 'success',
+    //                 'message' => 'No video tracking records found.',
+    //                 'data' => []
+    //             ]);
+    //         }
+
+    //         // ✅ Fetch content with genre info
+    //         $contents = Content::with('genre')
+    //             ->whereIn('id', $contentIds)
+    //             ->orderBy('updated_at', 'desc')
+    //             ->paginate($perPage);
+
+    //         // ✅ Attach elapsed_time to each content
+    //         $contents->getCollection()->transform(function ($content) use ($videoData) {
+    //             $content->elapsed_time = $videoData[$content->id]->elapsed_time ?? null;
+    //             return $content;
+    //         });
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'User viewed contents fetched successfully.',
+    //             'data' => $contents
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         \Log::error('History fetch error: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to fetch user viewed contents.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function History(Request $request)
     {
         try {
+            // ✅ Authentication check
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated access. Please log in.'
+                ], 401);
+            }
+
             $perPage = $request->query('per_page', 10);
             $userId = $request->input('user_id', Auth::id());
             $device_id = $request->query('device_id');
+            $contentIdsFilter = $request->query('content_id');
 
-            // Optional access rule: allow self or admin
-            if ($userId != Auth::id() && !Auth::user()->hasRole('subscriber')) {
+            // Normalize content_id (accepts single or array)
+            if ($contentIdsFilter && !is_array($contentIdsFilter)) {
+                $contentIdsFilter = [$contentIdsFilter];
+            }
+
+            $authUser = Auth::user();
+
+            // ✅ Authorization: Only allow self or subscribers
+            if ($userId != $authUser->id ) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Unauthorized access.'
                 ], 403);
             }
 
-            // ✅ Fetch video tracking records (from videos table)
-            $videoQuery = Video::where('user_id', $userId);
-            if ($device_id) {
-                $videoQuery->where('device_id', $device_id);
-            }
+            // ✅ Fetch latest video entries per content_id
+            $latestVideoIds = Video::selectRaw('MAX(id) as id')
+                ->where('user_id', $userId)
+                ->when($device_id, fn($q) => $q->where('device_id', $device_id))
+                ->when($contentIdsFilter, fn($q) => $q->whereIn('content_id', $contentIdsFilter))
+                ->groupBy('content_id')
+                ->pluck('id');
 
-            $videoData = $videoQuery->get(['content_id', 'elapsed_time'])->keyBy('content_id');
+            // ✅ Retrieve elapsed_time and group by content_id
+            $videoData = Video::whereIn('id', $latestVideoIds)
+                ->get(['content_id', 'elapsed_time'])
+                ->keyBy('content_id');
 
-            // ✅ Get the content IDs
             $contentIds = $videoData->keys();
 
             if ($contentIds->isEmpty()) {
@@ -227,13 +388,13 @@ class ContentController extends Controller
                 ]);
             }
 
-            // ✅ Fetch contents with genre
+            // ✅ Fetch associated contents with genre info
             $contents = Content::with('genre')
                 ->whereIn('id', $contentIds)
                 ->orderBy('updated_at', 'desc')
                 ->paginate($perPage);
 
-            // ✅ Attach elapsed_time to each content item
+            // ✅ Attach elapsed_time to each content
             $contents->getCollection()->transform(function ($content) use ($videoData) {
                 $content->elapsed_time = $videoData[$content->id]->elapsed_time ?? null;
                 return $content;
@@ -243,8 +404,10 @@ class ContentController extends Controller
                 'status' => 'success',
                 'message' => 'User viewed contents fetched successfully.',
                 'data' => $contents
-            ], 200);
+            ]);
         } catch (\Exception $e) {
+            \Log::error('History fetch error: ' . $e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to fetch user viewed contents.',
