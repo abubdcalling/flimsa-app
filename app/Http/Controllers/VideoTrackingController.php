@@ -33,8 +33,25 @@ class VideoTrackingController extends Controller
                 'elapsed_time' => 'required|string',  // Assuming it's seconds as string (e.g., "360")
             ]);
 
-            // Store the video tracking
+                    // Check if a record already exists
+        $video = Video::where('user_id', $validated['user_id'])
+            ->where('device_id', $validated['device_id'])
+            ->where('content_id', $validated['content_id'])
+            ->first();
+
+        if ($video) {
+            // Update existing record
+            $video->update([
+                'status' => $validated['status'],
+                'elapsed_time' => $validated['elapsed_time'],
+            ]);
+        } else {
+            // Create new record
             $video = Video::create($validated);
+        }
+
+            // Store the video tracking
+            // $video = Video::create($validated);
 
             // Fetch the user
             $user = User::find($validated['user_id']);
