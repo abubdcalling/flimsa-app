@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class ContentController extends Controller
 {
@@ -334,7 +336,7 @@ class ContentController extends Controller
     //     }
     // }
 
-    public function History(Request $request)
+    public function History_workable(Request $request)
     {
         try {
             // ✅ Authentication check
@@ -358,7 +360,7 @@ class ContentController extends Controller
             $authUser = Auth::user();
 
             // ✅ Authorization: Only allow self or subscribers
-            if ($userId != $authUser->id ) {
+            if ($userId != $authUser->id) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Unauthorized access.'
@@ -370,6 +372,81 @@ class ContentController extends Controller
                 ->where('user_id', $userId)
                 ->when($device_id, fn($q) => $q->where('device_id', $device_id))
                 ->when($contentIdsFilter, fn($q) => $q->whereIn('content_id', $contentIdsFilter))
+                ->groupBy('content_id')
+                ->pluck('id');
+
+            // ✅ Retrieve elapsed_time and group by content_id
+            $videoData = Video::whereIn('id', $latestVideoIds)
+                ->get(['content_id', 'elapsed_time'])
+                ->keyBy('content_id');
+
+            $contentIds = $videoData->keys();
+
+            if ($contentIds->isEmpty()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'No video tracking records found.',
+                    'data' => []
+                ]);
+            }
+
+            // ✅ Fetch associated contents with genre info
+            $contents = Content::with('genre')
+                ->whereIn('id', $contentIds)
+                ->orderBy('updated_at', 'desc')
+                ->paginate($perPage);
+
+            // ✅ Attach elapsed_time to each content
+            $contents->getCollection()->transform(function ($content) use ($videoData) {
+                $content->elapsed_time = $videoData[$content->id]->elapsed_time ?? null;
+                return $content;
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User viewed contents fetched successfully.',
+                'data' => $contents
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('History fetch error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch user viewed contents.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function History(Request $request)
+    {
+        try {
+            // ✅ Authentication check
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated access. Please log in.'
+                ], 401);
+            }
+
+            $perPage = $request->query('per_page', 10);
+            $userId = $request->input('user_id', Auth::id());
+            $device_id = $request->query('device_id');
+
+            $authUser = Auth::user();
+
+            // ✅ Authorization: Only allow self or subscribers
+            if ($userId != $authUser->id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
+
+            // ✅ Fetch latest video entries per content_id (no content_id filter)
+            $latestVideoIds = Video::selectRaw('MAX(id) as id')
+                ->where('user_id', $userId)
+                ->when($device_id, fn($q) => $q->where('device_id', $device_id))
                 ->groupBy('content_id')
                 ->pluck('id');
 
@@ -531,7 +608,7 @@ class ContentController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store_abu_sayed(Request $request)
     {
         try {
             $imageName = null;
@@ -560,6 +637,20 @@ class ContentController extends Controller
                 Storage::disk('s3')->setVisibility($profilePath, 'public');
                 $profilePicUrl = Storage::disk('s3')->url($profilePath);
             }
+            // return $request;
+
+            $request->validate([
+                'video1' => ['required', 'json'],  // Validate it's a valid JSON string
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'publish' => 'required|string',
+                'schedule' => 'nullable|date',
+                'genre_id' => 'required|exists:genres,id',
+                'director_name' => 'required|string|max:255',
+                'image' => 'required|url',
+                'profile_pic' => 'required|url',
+                // 'duration' => 'nullable|integer|min:1' // Optional if using
+            ]);
 
             $content = Content::create([
                 'video1' => $request->input('video1'),  // S3 URL
@@ -571,7 +662,7 @@ class ContentController extends Controller
                 'image' => $imageName,  // S3 URL
                 'director_name' => $request->input('director_name'),
                 'profile_pic' => $profilePicUrl,
-                'duration'=> $request->input('duration', null), // Optional duration field
+                // 'duration'=> $request->input('duration', null), // Optional duration field
             ]);
 
             return response()->json([
@@ -588,6 +679,98 @@ class ContentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create content.',
+            ], 500);
+        }
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            // 1. Pre-validate manually to catch early errors for uploaded files or JSON format
+            $validator = Validator::make($request->all(), [
+                'video1' => ['required', 'json'],  // Must be a valid JSON string
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'publish' => 'required|string',
+                'schedule' => 'nullable|date',
+                'genre_id' => 'nullable|exists:genres,id',
+                'director_name' => 'required|string|max:255',
+                'image' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'profile_pic' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'duration' => 'nullable|string',  // Optional if using
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation error.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // 2. Upload image to S3
+            $imageName = null;
+            if ($request->hasFile('image')) {
+                $imageFile = $request->file('image');
+                $imagePath = $imageFile->store('images', 's3');
+
+                if (!$imagePath) {
+                    throw new \Exception('Failed to upload image to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
+                $imageName = Storage::disk('s3')->url($imagePath);
+            }
+
+            // 3. Upload profile picture to S3
+            $profilePicUrl = null;
+            if ($request->hasFile('profile_pic')) {
+                $profileFile = $request->file('profile_pic');
+                $profilePath = $profileFile->store('profile_pics', 's3');
+
+                if (!$profilePath) {
+                    throw new \Exception('Failed to upload profile picture to S3');
+                }
+
+                Storage::disk('s3')->setVisibility($profilePath, 'public');
+                $profilePicUrl = Storage::disk('s3')->url($profilePath);
+            }
+
+            // 4. Store content in database
+            // return $request->duration;
+            $content = Content::create([
+                'video1' => $request->input('video1'),  // already JSON string
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'publish' => $request->input('publish'),
+                'schedule' => $request->input('schedule') === 'schedule' ? now() : $request->input('schedule'),
+                'genre_id' => $request->input('genre_id'),
+                'image' => $imageName,
+                'director_name' => $request->input('director_name'),
+                'profile_pic' => $profilePicUrl,
+                'duration' => $request->input('duration')
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Content created successfully.',
+                'data' => $content,
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation exception.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to store content', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error. Please try again later.',
             ], 500);
         }
     }
