@@ -571,6 +571,7 @@ class ContentController extends Controller
                 'image' => $imageName,  // S3 URL
                 'director_name' => $request->input('director_name'),
                 'profile_pic' => $profilePicUrl,
+                'duration'=> $request->input('duration', null), // Optional duration field
             ]);
 
             return response()->json([
