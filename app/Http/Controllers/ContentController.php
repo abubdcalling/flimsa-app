@@ -779,7 +779,7 @@ class ContentController extends Controller
     public function show($id, Request $request)
     {
         // return $id;
-        $content = Content::with('genres','subtitles')->find($id);
+        $content = Content::with('genres', 'subtitles')->find($id);
 
         if (!$content) {
             return response()->json([
@@ -799,15 +799,24 @@ class ContentController extends Controller
         // Log view and fetch like/wishlist if user is logged in
         if (Auth::check()) {
             $userId = Auth::id();
+            $deviceId = $request->query('device_id');
 
             // Log history or update timestamp
-            $history = History::updateOrCreate(
+            History::updateOrCreate(
                 ['user_id' => $userId, 'content_id' => $id],
                 ['updated_at' => now()]
             );
 
-            // Fetch elapsed_time
-            $elapsedTime = $history->elapsed_time;
+            // Get latest Video record for this user + content (+ device_id if present)
+            $latestVideo = Video::where('user_id', $userId)
+                ->where('content_id', $id)
+                ->when($deviceId, fn($q) => $q->where('device_id', $deviceId))
+                ->orderByDesc('id')
+                ->first();
+
+            if ($latestVideo) {
+                $elapsedTime = $latestVideo->elapsed_time;
+            }
 
             // Check if liked
             $isLiked = \App\Models\Like::where('user_id', $userId)
