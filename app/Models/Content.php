@@ -25,6 +25,8 @@ class Content extends Model
         return $this->hasMany(Subtitle::class);
     }
 
+    
+
     // public function genres(): BelongsTo
     // {
     //     return $this->belongsTo(Genre::class);

@@ -52,35 +52,83 @@ class SubtitleController extends Controller
         }
     }
 
+    // public function store(Request $request, $contentId)
+    // {
+    //     try {
+    //         // Validate input
+    //         $request->validate([
+    //             'language' => 'required|string|max:50',
+    //             'file_path' => 'required|file',  // 2MB max
+    //         ]);
+
+    //         // Handle file upload
+    //         $file = $request->file('file_path');
+    //         $path = $file->store('subtitles', 'public');  // store in /storage/app/public/subtitles
+
+    //         // Create subtitle
+    //         $subtitle = Subtitle::create([
+    //             'content_id' => $contentId,
+    //             'language' => $request->language,
+    //             'file_path' => $path,
+    //         ]);
+
+    //         return response()->json([
+    //             'message' => 'Subtitle uploaded successfully.',
+    //             'data' => $subtitle
+    //         ], 201);
+    //     } catch (\Exception $e) {
+    //         Log::error('Subtitle upload failed: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'message' => 'Failed to upload subtitle.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function store(Request $request, $contentId)
     {
         try {
-            // Validate input
-            $request->validate([
-                'language' => 'required|string|max:50',
-                'file_path' => 'required|file',  // 2MB max
-            ]);
+            $subtitles = $request->file('subtitles');
 
-            // Handle file upload
-            $file = $request->file('file_path');
-            $path = $file->store('subtitles', 'public');  // store in /storage/app/public/subtitles
+            if (!$subtitles || !is_array($subtitles)) {
+                return response()->json(['message' => 'No subtitles uploaded.'], 400);
+            }
 
-            // Create subtitle
-            $subtitle = Subtitle::create([
-                'content_id' => $contentId,
-                'language' => $request->language,
-                'file_path' => $path,
-            ]);
+            $savedSubtitles = [];
+
+            foreach ($subtitles as $language => $file) {
+                // Validate each file and language key
+                if (!$file || !$file->isValid()) {
+                    continue;
+                }
+
+                if (!preg_match('/^[a-z]{2}$/i', $language)) {
+                    continue;  // skip invalid language keys
+                }
+
+                // Store the file
+                $path = $file->store('subtitles', 'public');
+
+                // Save to database
+                $subtitle = Subtitle::create([
+                    'content_id' => $contentId,
+                    'language' => $language,
+                    'file_path' => $path,
+                ]);
+
+                $savedSubtitles[] = $subtitle;
+            }
 
             return response()->json([
-                'message' => 'Subtitle uploaded successfully.',
-                'data' => $subtitle
+                'message' => 'Subtitles uploaded successfully.',
+                'data' => $savedSubtitles
             ], 201);
         } catch (\Exception $e) {
             Log::error('Subtitle upload failed: ' . $e->getMessage());
 
             return response()->json([
-                'message' => 'Failed to upload subtitle.',
+                'message' => 'Failed to upload subtitles.',
                 'error' => $e->getMessage()
             ], 500);
         }

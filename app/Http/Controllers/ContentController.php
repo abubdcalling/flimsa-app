@@ -779,7 +779,7 @@ class ContentController extends Controller
     public function show($id, Request $request)
     {
         // return $id;
-        $content = Content::with('genres')->find($id);
+        $content = Content::with('genres','subtitles')->find($id);
 
         if (!$content) {
             return response()->json([

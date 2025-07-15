@@ -17,4 +17,6 @@ class Subtitle extends Model
     {
         return $this->belongsTo(Content::class);
     }
+
+    
 }
