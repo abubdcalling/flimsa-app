@@ -836,7 +836,7 @@ class ContentController extends Controller
             'data' => $content,
             'liked' => $isLiked,
             'wishlisted' => $isWishlisted,
-            'elapsed_time' => $elapsedTime,
+            'elapsed_time' => $elapsedTime,                                   
         ]);
     }
 

@@ -81,12 +81,15 @@ Route::middleware('auth:api')->group(function () {
         // Route::get('historys', [ContentController::class, 'History']);
         Route::apiResource('wishlist', WishListController::class);
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+        Route::get('success', [StripePaymentController::class, 'success']);
+        Route::get('cancel', [StripePaymentController::class, 'cancel']);
 
         Route::apiResource('video-tracking', VideoTrackingController::class);
         Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'show']);
         Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'destroy']);
         Route::put('users/plan-type', [UserController::class, 'updateMyPlanType']);
         // Route::get('content/{id}', [ContentController::class, 'individualContent']);
+        Route::get('payment-status', [StripePaymentController::class, 'index']);
     });
 
     Route::middleware(['role:admin,subscriber'])->group(function () {
