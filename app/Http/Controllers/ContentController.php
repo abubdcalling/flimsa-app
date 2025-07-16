@@ -608,7 +608,7 @@ class ContentController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store_abu_sayed(Request $request)
     {
         try {
             $imageName = null;
@@ -683,97 +683,97 @@ class ContentController extends Controller
         }
     }
 
-    // public function store(Request $request)
-    // {
-    //     try {
-    //         // 1. Pre-validate manually to catch early errors for uploaded files or JSON format
-    //         $validator = Validator::make($request->all(), [
-    //             'video1' => ['required', 'json'],  // Must be a valid JSON string
-    //             'title' => 'required|string|max:255',
-    //             'description' => 'nullable|string',
-    //             'publish' => 'required|string',
-    //             'schedule' => 'nullable|date',
-    //             'genre_id' => 'nullable|exists:genres,id',
-    //             'director_name' => 'required|string|max:255',
-    //             'image' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
-    //             'profile_pic' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
-    //             'duration' => 'nullable|string',  // Optional if using
-    //         ]);
+    public function store(Request $request)
+    {
+        try {
+            // 1. Pre-validate manually to catch early errors for uploaded files or JSON format
+            $validator = Validator::make($request->all(), [
+                'video1' => ['required', 'json'],  // Must be a valid JSON string
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'publish' => 'required|string',
+                'schedule' => 'nullable|date',
+                'genre_id' => 'nullable|exists:genres,id',
+                'director_name' => 'required|string|max:255',
+                'image' => 'required|file|mimes:jpeg,png,jpg,gif,svg',
+                'profile_pic' => 'required|file|mimes:jpeg,png,jpg,gif,svg',
+                'duration' => 'nullable|string',  // Optional if using
+            ]);
 
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation error.',
-    //                 'errors' => $validator->errors(),
-    //             ], 422);
-    //         }
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation error.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
 
-    //         // 2. Upload image to S3
-    //         $imageName = null;
-    //         if ($request->hasFile('image')) {
-    //             $imageFile = $request->file('image');
-    //             $imagePath = $imageFile->store('images', 's3');
+            // 2. Upload image to S3
+            $imageName = null;
+            if ($request->hasFile('image')) {
+                $imageFile = $request->file('image');
+                $imagePath = $imageFile->store('images', 's3');
 
-    //             if (!$imagePath) {
-    //                 throw new \Exception('Failed to upload image to S3');
-    //             }
+                if (!$imagePath) {
+                    throw new \Exception('Failed to upload image to S3');
+                }
 
-    //             Storage::disk('s3')->setVisibility($imagePath, 'public');
-    //             $imageName = Storage::disk('s3')->url($imagePath);
-    //         }
+                Storage::disk('s3')->setVisibility($imagePath, 'public');
+                $imageName = Storage::disk('s3')->url($imagePath);
+            }
 
-    //         // 3. Upload profile picture to S3
-    //         $profilePicUrl = null;
-    //         if ($request->hasFile('profile_pic')) {
-    //             $profileFile = $request->file('profile_pic');
-    //             $profilePath = $profileFile->store('profile_pics', 's3');
+            // 3. Upload profile picture to S3
+            $profilePicUrl = null;
+            if ($request->hasFile('profile_pic')) {
+                $profileFile = $request->file('profile_pic');
+                $profilePath = $profileFile->store('profile_pics', 's3');
 
-    //             if (!$profilePath) {
-    //                 throw new \Exception('Failed to upload profile picture to S3');
-    //             }
+                if (!$profilePath) {
+                    throw new \Exception('Failed to upload profile picture to S3');
+                }
 
-    //             Storage::disk('s3')->setVisibility($profilePath, 'public');
-    //             $profilePicUrl = Storage::disk('s3')->url($profilePath);
-    //         }
+                Storage::disk('s3')->setVisibility($profilePath, 'public');
+                $profilePicUrl = Storage::disk('s3')->url($profilePath);
+            }
 
-    //         // 4. Store content in database
-    //         // return $request->duration;
-    //         $content = Content::create([
-    //             'video1' => $request->input('video1'),  // already JSON string
-    //             'title' => $request->input('title'),
-    //             'description' => $request->input('description'),
-    //             'publish' => $request->input('publish'),
-    //             'schedule' => $request->input('schedule') === 'schedule' ? now() : $request->input('schedule'),
-    //             'genre_id' => $request->input('genre_id'),
-    //             'image' => $imageName,
-    //             'director_name' => $request->input('director_name'),
-    //             'profile_pic' => $profilePicUrl,
-    //             'duration' => $request->input('duration')
-    //         ]);
+            // 4. Store content in database
+            // return $request->duration;
+            $content = Content::create([
+                'video1' => $request->input('video1'),  // already JSON string
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'publish' => $request->input('publish'),
+                'schedule' => $request->input('schedule') === 'schedule' ? now() : $request->input('schedule'),
+                'genre_id' => $request->input('genre_id'),
+                'image' => $imageName,
+                'director_name' => $request->input('director_name'),
+                'profile_pic' => $profilePicUrl,
+                'duration' => $request->input('duration')
+            ]);
 
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Content created successfully.',
-    //             'data' => $content,
-    //         ], 201);
-    //     } catch (ValidationException $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Validation exception.',
-    //             'errors' => $e->errors(),
-    //         ], 422);
-    //     } catch (\Throwable $e) {
-    //         \Log::error('Failed to store content', [
-    //             'message' => $e->getMessage(),
-    //             'trace' => $e->getTraceAsString(),
-    //         ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Content created successfully.',
+                'data' => $content,
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation exception.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to store content', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Server error. Please try again later.',
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error. Please try again later.',
+            ], 500);
+        }
+    }
 
     // GET /api/contents/{id}
     public function show($id, Request $request)
