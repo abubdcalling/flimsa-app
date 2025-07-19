@@ -100,6 +100,7 @@ class AuthController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6|same:confirm_password',
                 'confirm_password' => 'required|string|min:6',
+                'gender' => 'required|in:male,female,others', 
             ]);
 
             if ($validator->fails()) {
@@ -116,6 +117,7 @@ class AuthController extends Controller
                 'first_name' => $validated['first_name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'gender' => $validated['gender'],
             ]);
 
             return response()->json([
@@ -125,6 +127,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'first_name' => $user->first_name,
                     'email' => $user->email,
+                     'gender' => $user->gender,
                     // 'roles' => $user->role, // Assuming you have a 'role' field in your User model
                 ]
             ], 201);
@@ -187,6 +190,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'email' => $user->email,
                     'role' => $user->roles,
+                    'plan_type' => $user->plan_type ?? null, // Assuming plan_type is a field in your User model
                 ],
             ]);
         } catch (Exception $e) {

@@ -61,6 +61,25 @@ class ContentController extends Controller
                     ];
                 });
 
+            // Gender percentage breakdown with count
+            $genderCounts = User::select('gender', DB::raw('count(*) as total'))
+                ->whereIn('gender', ['male', 'female', 'others'])
+                ->groupBy('gender')
+                ->pluck('total', 'gender');
+
+            $totalGenderCount = $genderCounts->sum();
+
+            $genderPercentages = collect(['male', 'female', 'others'])->map(function ($gender) use ($genderCounts, $totalGenderCount) {
+                $count = $genderCounts[$gender] ?? 0;
+                $percentage = $totalGenderCount > 0 ? round(($count / $totalGenderCount) * 100, 2) : 0;
+
+                return [
+                    'gender' => $gender,
+                    'count' => $count,
+                    'percentage' => $percentage,
+                ];
+            });
+
             // Monthly revenue breakdown by plan type
             $currentYear = Carbon::now()->year;
 
@@ -120,6 +139,7 @@ class ContentController extends Controller
                         'without_ads' => $withoutAdsMonthly,
                     ],
                     'genre_distribution' => $genrePercentages,
+                    'gender_distribution' => $genderPercentages,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -533,13 +553,19 @@ class ContentController extends Controller
 
             // [content_id => total_likes]
 
+            // Total watch durations per content
+            $watchedDurations = DB::table('devices')
+                ->select('content_id', DB::raw('SUM(CAST(duration AS UNSIGNED)) as total_duration'))
+                ->groupBy('content_id')
+                ->pluck('total_duration', 'content_id');
+
             // Fetch paginated contents with genre relationship
             $contents = Content::with('genres')  // genres contains genre name
                 ->select('id', 'video1', 'title', 'director_name', 'profile_pic', 'description', 'publish', 'schedule', 'genre_id', 'image', 'view_count', 'created_at')
                 ->latest()
                 ->paginate($paginateCount);
 
-            $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped) {
+            $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped,$watchedDurations) {
                 // Rename view_count to total_view
                 $content->total_view = $content->view_count;
                 unset($content->view_count);
@@ -552,6 +578,9 @@ class ContentController extends Controller
 
                 // Remove the genres object if only genre_name is needed
                 unset($content->genres);
+
+                // Total watch time (in seconds)
+            $content->total_watch_time = (int) ($watchedDurations[$content->id] ?? 0);
 
                 // Add is_liked only if user is logged in
                 if ($userId) {
@@ -836,7 +865,7 @@ class ContentController extends Controller
             'data' => $content,
             'liked' => $isLiked,
             'wishlisted' => $isWishlisted,
-            'elapsed_time' => $elapsedTime,                                   
+            'elapsed_time' => $elapsedTime,
         ]);
     }
 
