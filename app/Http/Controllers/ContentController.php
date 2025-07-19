@@ -565,7 +565,7 @@ class ContentController extends Controller
                 ->latest()
                 ->paginate($paginateCount);
 
-            $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped,$watchedDurations) {
+            $contents->getCollection()->transform(function ($content) use ($userId, $likesGrouped, $watchedDurations) {
                 // Rename view_count to total_view
                 $content->total_view = $content->view_count;
                 unset($content->view_count);
@@ -580,7 +580,12 @@ class ContentController extends Controller
                 unset($content->genres);
 
                 // Total watch time (in seconds)
-            $content->total_watch_time = (int) ($watchedDurations[$content->id] ?? 0);
+                // Format total watch time as HH:mm:ss
+                $totalSeconds = (int) ($watchedDurations[$content->id] ?? 0);
+                $hours = floor($totalSeconds / 3600);
+                $minutes = floor(($totalSeconds % 3600) / 60);
+                $seconds = $totalSeconds % 60;
+                $content->total_watch_time = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
 
                 // Add is_liked only if user is logged in
                 if ($userId) {
