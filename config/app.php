@@ -57,7 +57,7 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
     
-    'frontend_url' => env('APP_FRONTEND_URL', 'http://localhost:3000'),
+    'frontend_url' => env('APP_FRONTEND_URL', 'https://azlotv.com/'),
 
 
     'asset_url' => env('ASSET_URL'),
