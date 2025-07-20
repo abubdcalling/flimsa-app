@@ -80,7 +80,7 @@ class AdController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ads' => 'required|mimes:mp4,avi,mpeg,qt',  // max 50MB
+            'ads' => 'required|mimes:jpg,jpeg,png,gif,webp,mp4,avi,mpeg,qt',  // max 50MB
         ]);
 
         try {
