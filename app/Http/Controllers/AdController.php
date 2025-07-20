@@ -26,45 +26,88 @@ class AdController extends Controller
         }
     }
 
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'ads' => 'required|mimes:mp4,avi,mpeg,qt|max:51200',  // 50MB max
+    //     ]);
+
+    //     try {
+    //         // Upload the file
+    //         if ($request->hasFile('ads')) {
+    //             $file = $request->file('ads');
+
+    //             // Store in public disk (storage/app/public/ads)
+    //             $filePath = $file->store('ads', 'public');
+
+    //             // Get full public path (e.g., http://yourdomain.com/storage/ads/filename.mp4)
+    //             $fullPath = asset('storage/' . $filePath);
+    //         } else {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'No video file uploaded.',
+    //             ], 400);
+    //         }
+
+    //         // Save to DB
+    //         $ad = Ad::create([
+    //             'ads' => $fullPath,  // Save the full URL or path
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Ad created successfully',
+    //             'data' => $ad
+    //         ], 201);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Ad store error: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to create ad'
+    //         ], 500);
+    //     }
+    // }
+
     public function store(Request $request)
     {
         $request->validate([
-            'ads' => 'required|mimes:mp4,avi,mpeg,qt|max:51200',  // 50MB max
+            'ads' => 'required|mimes:mp4,avi,mpeg,qt|max:51200',  // max 50MB
         ]);
 
         try {
-            // Upload the file
             if ($request->hasFile('ads')) {
                 $file = $request->file('ads');
+                $fileName = time() . '_' . $file->getClientOriginalName();
 
-                // Store in public disk (storage/app/public/ads)
-                $filePath = $file->store('ads', 'public');
+                // Move the file to public/ads/
+                $file->move(public_path('ads'), $fileName);
 
-                // Get full public path (e.g., http://yourdomain.com/storage/ads/filename.mp4)
-                $fullPath = asset('storage/' . $filePath);
-            } else {
+                // Save the file name or full path in DB
+                $ad = Ad::create([
+                    'ads' => 'ads/' . $fileName,  // or just $fileName if you prefer
+                ]);
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No video file uploaded.',
-                ], 400);
+                    'success' => true,
+                    'message' => 'Ad uploaded successfully.',
+                    'data' => [
+                        'id' => $ad->id,
+                        'ads_url' => asset('ads/' . $fileName),
+                    ],
+                ], 201);
             }
-
-            // Save to DB
-            $ad = Ad::create([
-                'ads' => $fullPath,  // Save the full URL or path
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Ad created successfully',
-                'data' => $ad
-            ], 201);
-        } catch (\Exception $e) {
-            \Log::error('Ad store error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create ad'
+                'message' => 'No file was uploaded.',
+            ], 400);
+        } catch (\Exception $e) {
+            \Log::error('Ad upload error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload ad.',
             ], 500);
         }
     }
