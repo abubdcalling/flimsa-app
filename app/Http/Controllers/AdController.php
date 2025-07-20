@@ -120,14 +120,46 @@ class AdController extends Controller
         }
     }
 
+    // public function show($id)
+    // {
+    //     try {
+    //         $ad = Ad::findOrFail($id);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => $ad
+    //         ], 200);
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Ad not found'
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Ad show error: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch ad'
+    //         ], 500);
+    //     }
+    // }
+
     public function show($id)
     {
         try {
             $ad = Ad::findOrFail($id);
 
+            // Convert the relative path to a full URL
+            $ad->ads_url = url($ad->ads);  // or config('app.url') . '/' . $ad->ads
+
             return response()->json([
                 'success' => true,
-                'data' => $ad
+                'data' => [
+                    'id' => $ad->id,
+                    'ads_url' => $ad->ads_url,
+                    'created_at' => $ad->created_at,
+                    'updated_at' => $ad->updated_at,
+                ]
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
