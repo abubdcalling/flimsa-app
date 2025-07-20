@@ -11,17 +11,25 @@ class AdController extends Controller
     public function index()
     {
         try {
-            $ads = Ad::all();
+            $ads = Ad::all()->map(function ($ad) {
+                return [
+                    'id' => $ad->id,
+                    'ads_url' => url($ad->ads),  // Full URL to the video file
+                    'created_at' => $ad->created_at,
+                    'updated_at' => $ad->updated_at,
+                ];
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $ads
+                'data' => $ads,
             ]);
         } catch (\Exception $e) {
             Log::error('Ad index error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch ads'
+                'message' => 'Failed to fetch ads',
             ], 500);
         }
     }
@@ -72,7 +80,7 @@ class AdController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ads' => 'required|mimes:mp4,avi,mpeg,qt|max:51200',  // max 50MB
+            'ads' => 'required|mimes:mp4,avi,mpeg,qt',  // max 50MB
         ]);
 
         try {
