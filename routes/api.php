@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\GenreController;
@@ -66,6 +67,7 @@ Route::middleware('auth:api')->group(function () {
         });
 
         Route::get('content/{id}', [ContentController::class, 'show']);
+        Route::apiResource('ads', AdController::class)->except(['index','show']);
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
@@ -110,4 +112,5 @@ Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
 Route::get('subtitles/{id}', [SubtitleController::class, 'show']);
-// Route::get('historys', [ContentController::class, 'History']);
+Route::get('ads', [AdController::class,'index']);
+Route::get('ads/{id}', [AdController::class,'show']);
