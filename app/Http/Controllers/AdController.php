@@ -83,9 +83,9 @@ class AdController extends Controller
                 // Move the file to public/ads/
                 $file->move(public_path('ads'), $fileName);
 
-                // Save the file name or full path in DB
+                // Save the file path in the database
                 $ad = Ad::create([
-                    'ads' => 'ads/' . $fileName,  // or just $fileName if you prefer
+                    'ads' => 'ads/' . $fileName,
                 ]);
 
                 return response()->json([
@@ -93,7 +93,7 @@ class AdController extends Controller
                     'message' => 'Ad uploaded successfully.',
                     'data' => [
                         'id' => $ad->id,
-                        'ads_url' => asset('ads/' . $fileName),
+                        'ads_url' => url('ads/' . $fileName),  // Full URL
                     ],
                 ], 201);
             }
