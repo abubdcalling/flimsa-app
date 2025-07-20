@@ -176,46 +176,97 @@ class AdController extends Controller
         }
     }
 
+    // public function update(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'ads' => 'nullable|mimes:mp4,avi,mpeg,qt',  // 50MB max
+    //     ]);
+
+    //     try {
+    //         $ad = Ad::findOrFail($id);
+
+    //         // Check if a new file is uploaded
+    //         if ($request->hasFile('ads')) {
+    //             $file = $request->file('ads');
+
+    //             // Optionally: delete the old file from storage (if path was relative)
+    //             if ($ad->ads && str_contains($ad->ads, 'storage/ads')) {
+    //                 $oldPath = str_replace(asset('storage') . '/', '', $ad->ads);  // ads/file.mp4
+    //                 \Storage::disk('public')->delete($oldPath);
+    //             }
+
+    //             // Upload the new file
+    //             $filePath = $file->store('ads', 'public');
+    //             $fullPath = asset('storage/' . $filePath);
+
+    //             // Update with new video path
+    //             $ad->ads = $fullPath;
+    //         }
+
+    //         $ad->save();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Ad updated successfully',
+    //             'data' => $ad
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Ad update error: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to update ad'
+    //         ], 500);
+    //     }
+    // }
+
     public function update(Request $request, $id)
     {
         $request->validate([
-            'ads' => 'nullable|mimes:mp4,avi,mpeg,qt',  // 50MB max
+            'ads' => 'nullable|mimes:mp4,avi,mpeg,qt|max:51200',  // max 50MB
         ]);
 
         try {
             $ad = Ad::findOrFail($id);
 
-            // Check if a new file is uploaded
             if ($request->hasFile('ads')) {
                 $file = $request->file('ads');
+                $fileName = time() . '_' . $file->getClientOriginalName();
 
-                // Optionally: delete the old file from storage (if path was relative)
-                if ($ad->ads && str_contains($ad->ads, 'storage/ads')) {
-                    $oldPath = str_replace(asset('storage') . '/', '', $ad->ads);  // ads/file.mp4
-                    \Storage::disk('public')->delete($oldPath);
+                // Optionally delete old file from public/ads/
+                $oldPath = public_path($ad->ads);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
                 }
 
-                // Upload the new file
-                $filePath = $file->store('ads', 'public');
-                $fullPath = asset('storage/' . $filePath);
+                // Move the new file to public/ads/
+                $file->move(public_path('ads'), $fileName);
 
-                // Update with new video path
-                $ad->ads = $fullPath;
+                // Update the file path in the database
+                $ad->ads = 'ads/' . $fileName;
             }
 
             $ad->save();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ad updated successfully',
-                'data' => $ad
+                'message' => 'Ad updated successfully.',
+                'data' => [
+                    'id' => $ad->id,
+                    'ads_url' => url($ad->ads),  // Full URL
+                ],
             ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ad not found.',
+            ], 404);
         } catch (\Exception $e) {
             \Log::error('Ad update error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update ad'
+                'message' => 'Failed to update ad.',
             ], 500);
         }
     }
