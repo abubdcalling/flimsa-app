@@ -14,7 +14,7 @@ class AdController extends Controller
             $ads = Ad::all()->map(function ($ad) {
                 return [
                     'id' => $ad->id,
-                    'ads_url' => url($ad->ads),  // Full URL to the video file
+                    'ads' => $ad->ads,  // directly return the stored string (URL or base64)
                     'created_at' => $ad->created_at,
                     'updated_at' => $ad->updated_at,
                 ];
@@ -25,7 +25,7 @@ class AdController extends Controller
                 'data' => $ads,
             ]);
         } catch (\Exception $e) {
-            Log::error('Ad index error: ' . $e->getMessage());
+            \Log::error('Ad index error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -80,42 +80,28 @@ class AdController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ads' => 'required|mimes:jpg,jpeg,png,gif,webp,mp4,avi,mpeg,qt',  // max 50MB
+            'ads' => 'required|string',
         ]);
 
         try {
-            if ($request->hasFile('ads')) {
-                $file = $request->file('ads');
-                $fileName = time() . '_' . $file->getClientOriginalName();
-
-                // Move the file to public/ads/
-                $file->move(public_path('ads'), $fileName);
-
-                // Save the file path in the database
-                $ad = Ad::create([
-                    'ads' => 'ads/' . $fileName,
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Ad uploaded successfully.',
-                    'data' => [
-                        'id' => $ad->id,
-                        'ads_url' => url('ads/' . $fileName),  // Full URL
-                    ],
-                ], 201);
-            }
+            $ad = Ad::create([
+                'ads' => $request->input('ads'),
+            ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'No file was uploaded.',
-            ], 400);
+                'success' => true,
+                'message' => 'Ad stored successfully.',
+                'data' => [
+                    'id' => $ad->id,
+                    'ads' => $ad->ads,
+                ],
+            ], 201);
         } catch (\Exception $e) {
-            \Log::error('Ad upload error: ' . $e->getMessage());
+            \Log::error('Ad save error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to upload ad.',
+                'message' => 'Failed to store ad.',
             ], 500);
         }
     }
@@ -149,14 +135,11 @@ class AdController extends Controller
         try {
             $ad = Ad::findOrFail($id);
 
-            // Convert the relative path to a full URL
-            $ad->ads_url = url($ad->ads);  // or config('app.url') . '/' . $ad->ads
-
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => $ad->id,
-                    'ads_url' => $ad->ads_url,
+                    'ads' => $ad->ads,  // directly return the stored string
                     'created_at' => $ad->created_at,
                     'updated_at' => $ad->updated_at,
                 ]
@@ -164,14 +147,14 @@ class AdController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ad not found'
+                'message' => 'Ad not found',
             ], 404);
         } catch (\Exception $e) {
             \Log::error('Ad show error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch ad'
+                'message' => 'Failed to fetch ad',
             ], 500);
         }
     }
@@ -223,29 +206,14 @@ class AdController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'ads' => 'nullable|mimes:mp4,avi,mpeg,qt|max:51200',  // max 50MB
+            'ads' => 'required|string',  // base64 string or URL
         ]);
 
         try {
             $ad = Ad::findOrFail($id);
 
-            if ($request->hasFile('ads')) {
-                $file = $request->file('ads');
-                $fileName = time() . '_' . $file->getClientOriginalName();
-
-                // Optionally delete old file from public/ads/
-                $oldPath = public_path($ad->ads);
-                if (file_exists($oldPath)) {
-                    unlink($oldPath);
-                }
-
-                // Move the new file to public/ads/
-                $file->move(public_path('ads'), $fileName);
-
-                // Update the file path in the database
-                $ad->ads = 'ads/' . $fileName;
-            }
-
+            // Update the value
+            $ad->ads = $request->input('ads');
             $ad->save();
 
             return response()->json([
@@ -253,7 +221,7 @@ class AdController extends Controller
                 'message' => 'Ad updated successfully.',
                 'data' => [
                     'id' => $ad->id,
-                    'ads_url' => url($ad->ads),  // Full URL
+                    'ads' => $ad->ads,
                 ],
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -274,27 +242,28 @@ class AdController extends Controller
     public function destroy(Ad $ad)
     {
         try {
-            // Get the file path relative to public directory
-            $filePath = public_path($ad->ads);
+            // Since you store 'ads' as a string (URL or base64),
+            // if it's a local file path, you may want to delete the file.
+            // But if it's a URL or base64, no local file to delete.
+            // You can check if the stored string is a file path and delete accordingly.
 
-            // Delete the file if it exists
-            if (file_exists($filePath)) {
-                unlink($filePath);
+            // Example: if it's a local path relative to public folder
+            if (file_exists(public_path($ad->ads))) {
+                unlink(public_path($ad->ads));
             }
 
-            // Delete the ad record from the database
             $ad->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ad deleted successfully'
+                'message' => 'Ad deleted successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error('Ad delete error: ' . $e->getMessage());
+            \Log::error('Ad delete error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete ad'
+                'message' => 'Failed to delete ad',
             ], 500);
         }
     }
