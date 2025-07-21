@@ -274,6 +274,15 @@ class AdController extends Controller
     public function destroy(Ad $ad)
     {
         try {
+            // Get the file path relative to public directory
+            $filePath = public_path($ad->ads);
+
+            // Delete the file if it exists
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+
+            // Delete the ad record from the database
             $ad->delete();
 
             return response()->json([
