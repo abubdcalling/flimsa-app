@@ -26,6 +26,7 @@ class UserController extends Controller
 
             $data = $users->getCollection()->map(function ($user) {
                 return [
+                    'id' => $user->id,
                     'email' => $user->email,
                     'profile_pic' => $user->profile_pic ? url('uploads/users/' . $user->profile_pic) : null,
                     'roles' => $user->roles,
