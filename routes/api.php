@@ -68,6 +68,7 @@ Route::middleware('auth:api')->group(function () {
 
         Route::get('content/{id}', [ContentController::class, 'show']);
         Route::apiResource('ads', AdController::class)->except(['index','show']);
+        Route::get('all-users', [UserController::class, 'showAllUsers']);
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
