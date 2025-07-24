@@ -25,6 +25,12 @@ class Content extends Model
         return $this->hasMany(Subtitle::class);
     }
 
+    public function cover()
+{
+    return $this->hasOne(Cover::class);
+}
+
+
     
 
     // public function genres(): BelongsTo

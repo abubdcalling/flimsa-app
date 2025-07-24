@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
+use App\Http\Controllers\CoverController;
 use App\Http\Controllers\GenreController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
@@ -69,6 +70,10 @@ Route::middleware('auth:api')->group(function () {
         Route::get('content/{id}', [ContentController::class, 'show']);
         Route::apiResource('ads', AdController::class)->except(['index','show']);
         Route::get('all-users', [UserController::class, 'showAllUsers']);
+
+        Route::post('/cover', [CoverController::class, 'postOrUpdateCover']);
+        Route::get('/cover', [CoverController::class, 'getCover']); // optional
+
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
