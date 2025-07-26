@@ -101,7 +101,6 @@ class StripePaymentController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Payment completed and subscription updated.',
             'user' => $user,
             'subscription' => [
                 'plan_type' => $plantype,
