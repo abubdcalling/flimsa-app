@@ -101,9 +101,11 @@ class StripePaymentController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'user' => $user,
-            'subscription' => [
-                'plan_type' => $plantype,
+            'data' => [
+                'user_id' => $user->id,
+                'plan_type' => $user->plan_type,
+                'created_at' => $user->created_at->toDateTimeString(),
+                'expire_date' => $user->updated_at->addDays(30)->toDateTimeString(), 
             ]
         ]);
     }
