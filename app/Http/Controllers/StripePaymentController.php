@@ -104,7 +104,7 @@ class StripePaymentController extends Controller
             'message' => 'Payment completed and subscription updated.',
             'user' => $user,
             'subscription' => [
-                'plan_type' => $planType,
+                'plan_type' => $plantype,
             ]
         ]);
     }
