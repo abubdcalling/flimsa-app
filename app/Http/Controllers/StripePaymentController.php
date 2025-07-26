@@ -92,6 +92,23 @@ class StripePaymentController extends Controller
         ]);
     }
 
+    public function paymentStatus(Request $request)
+    {
+        // return 1;
+        $user = Auth::user();  // or $request->user()
+        
+        $plantype = $user->plan_type;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment completed and subscription updated.',
+            'user' => $user,
+            'subscription' => [
+                'plan_type' => $planType,
+            ]
+        ]);
+    }
+
     public function success(Request $request)
     {
         // return 1;

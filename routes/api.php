@@ -97,7 +97,9 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'destroy']);
         Route::put('users/plan-type', [UserController::class, 'updateMyPlanType']);
         // Route::get('content/{id}', [ContentController::class, 'individualContent']);
-        Route::get('payment-status', [StripePaymentController::class, 'index']);
+        Route::get('payment-status', [StripePaymentController::class, 'paymentStatus']);
+
+
     });
 
     Route::middleware(['role:admin,subscriber'])->group(function () {
