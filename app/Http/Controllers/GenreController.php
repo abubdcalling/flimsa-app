@@ -33,6 +33,8 @@ class GenreController extends Controller
                     'id' => $coverEntry->content->id,
                     'title' => $coverEntry->content->title,
                     'description' => $coverEntry->content->description,
+                    'director_name' => $coverEntry->content->director_name,
+                    'profile_pic' => $coverEntry->content->profile_pic,
                     'image' => $coverEntry->content->image,
                     'video1' => $coverEntry->content->video1,
                     'publish' => $coverEntry->content->publish,
@@ -40,8 +42,6 @@ class GenreController extends Controller
                     'view_count' => $coverEntry->content->view_count,
                     'created_at' => $coverEntry->content->created_at,
                     'genre_name' => optional($coverEntry->content->genres)->name,
-                    'director_name' => $coverEntry->content->director_name,
-                    'profile_pic' => $coverEntry->content->profile_pic,
                 ];
             }
 
@@ -257,8 +257,8 @@ class GenreController extends Controller
                     'dramas' => $dramasContents,
                     'tv_shows' => $tvshows,
                     'weekly_top' => $weeklyTopContents,
-                    'latest' => $latestContent,
-                    'coverContent' => $coverContent,
+                    'latest' => $coverContent,
+                    // 'coverContent' => $coverContent,
                 ]
             ]);
         } catch (\Exception $e) {
