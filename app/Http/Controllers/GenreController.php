@@ -26,10 +26,10 @@ class GenreController extends Controller
             // Fetch cover content (if any)
             $coverEntry = Cover::with('content.genres')->first();
 
-            $coverContent = null;
+            $coverContent = collect();  // Initialize as empty collection
 
             if ($coverEntry && $coverEntry->content) {
-                $coverContent = [
+                $coverContent->push([
                     'id' => $coverEntry->content->id,
                     'title' => $coverEntry->content->title,
                     'description' => $coverEntry->content->description,
@@ -42,7 +42,7 @@ class GenreController extends Controller
                     'view_count' => $coverEntry->content->view_count,
                     'created_at' => $coverEntry->content->created_at,
                     'genre_name' => optional($coverEntry->content->genres)->name,
-                ];
+                ]);
             }
 
             // Latest 1 content
