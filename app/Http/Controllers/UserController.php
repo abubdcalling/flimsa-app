@@ -14,15 +14,16 @@ class UserController extends Controller
         try {
             $perPage = $request->input('per_page', 10);  // Default 10 users per page
 
-            $users = User::orderBy('created_at', 'desc')->paginate($perPage);
+            $planType = $request->input('plan_type');    // Optional plan_type filter
 
-            if ($users->total() === 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No users found.',
-                    'data' => [],
-                ], 404);
+            $query = User::query();
+
+            // 🔍 Filter by plan_type if provided
+            if (!empty($planType)) {
+                $query->where('plan_type', $planType);
             }
+
+            $users = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
             $data = $users->getCollection()->map(function ($user) {
                 return [
