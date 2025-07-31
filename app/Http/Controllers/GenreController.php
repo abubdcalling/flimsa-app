@@ -272,6 +272,7 @@ class GenreController extends Controller
     //     }
     // }
 
+    //---------------------------------
     public function Home(Request $request)
     {
         try {
@@ -348,7 +349,7 @@ class GenreController extends Controller
         }
     }
 
-    private function transformContent($content)
+    private function transformContent($content,$isUpcoming = false)
     {
         return [
             'id' => $content->id,
@@ -356,7 +357,7 @@ class GenreController extends Controller
             'description' => $content->description,
             'image' => $content->image,
             'video1' => $content->video1,  // Or use: json_decode($content->video1)
-            'publish' => $content->publish,
+            'publish' => $isUpcoming ? $content->schedule : $content->publish,,
             'schedule' => $content->schedule,
             'view_count' => $content->view_count,
             'created_at' => $content->created_at,
@@ -376,6 +377,8 @@ class GenreController extends Controller
 
         return $paginated->getCollection()->map(fn($content) => $this->transformContent($content));
     }
+
+    //-----------------------------
 
     // public function Home(Request $request)
     // {
