@@ -272,7 +272,7 @@ class GenreController extends Controller
     //     }
     // }
 
-    //---------------------------------
+    // ---------------------------------
     public function Home(Request $request)
     {
         try {
@@ -291,6 +291,8 @@ class GenreController extends Controller
 
             // Popular contents
             $popularContents = Content::with('genres:id,name')
+                ->where('publish', 'public')
+                ->whereNull('schedule')
                 ->select('id', 'title', 'description', 'director_name', 'profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->orderByDesc('view_count')
                 ->paginate($perPage);
@@ -299,6 +301,8 @@ class GenreController extends Controller
 
             // Upcoming contents
             $upcomingContents = Content::with('genres:id,name')
+                ->where('publish', 'public')
+                ->whereNull('schedule')
                 ->where('schedule', '>', Carbon::now())
                 ->select('id', 'title', 'description', 'director_name', 'profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->orderBy('schedule', 'asc')
@@ -308,6 +312,8 @@ class GenreController extends Controller
 
             // Weekly top contents
             $weeklyTopContents = Content::with('genres:id,name')
+                ->where('publish', 'public')
+                ->whereNull('schedule')
                 ->whereBetween('created_at', [Carbon::now()->subDays(7), Carbon::now()])
                 ->orderByDesc('view_count')
                 ->select('id', 'title', 'description', 'director_name', 'profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
@@ -349,7 +355,7 @@ class GenreController extends Controller
         }
     }
 
-    private function transformContent($content,$isUpcoming = false)
+    private function transformContent($content, $isUpcoming = false)
     {
         return [
             'id' => $content->id,
@@ -378,7 +384,7 @@ class GenreController extends Controller
         return $paginated->getCollection()->map(fn($content) => $this->transformContent($content));
     }
 
-    //-----------------------------
+    // -----------------------------
 
     // public function Home(Request $request)
     // {
