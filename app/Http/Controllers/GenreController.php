@@ -302,7 +302,7 @@ class GenreController extends Controller
             // Upcoming contents
             $upcomingContents = Content::with('genres:id,name')
                 ->where('publish', 'public')
-                ->whereNull('schedule')
+                ->where('schedule')
                 ->where('schedule', '>', Carbon::now())
                 ->select('id', 'title', 'description', 'director_name', 'profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->orderBy('schedule', 'asc')
