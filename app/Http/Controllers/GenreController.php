@@ -355,7 +355,7 @@ class GenreController extends Controller
         }
     }
 
-    private function transformContent($content, $isUpcoming = true)
+    private function transformContent($content, $isUpcoming = false)
     {
         return [
             'id' => $content->id,
