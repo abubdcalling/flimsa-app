@@ -357,7 +357,7 @@ class GenreController extends Controller
             'description' => $content->description,
             'image' => $content->image,
             'video1' => $content->video1,  // Or use: json_decode($content->video1)
-            'publish' => $isUpcoming ? $content->schedule : $content->publish,,
+            'publish' => $isUpcoming ? $content->schedule : $content->publish,
             'schedule' => $content->schedule,
             'view_count' => $content->view_count,
             'created_at' => $content->created_at,
