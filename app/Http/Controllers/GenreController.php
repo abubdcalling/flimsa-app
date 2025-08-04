@@ -302,7 +302,7 @@ class GenreController extends Controller
             // Upcoming contents
             $upcomingContents = Content::with('genres:id,name')
                 ->where('publish', 'schedule')
-                // ->where('schedule')  
+                // ->where('schedule')
                 // ->where('schedule', '>', Carbon::now())
                 ->select('id', 'title', 'description', 'director_name', 'profile_pic', 'image', 'video1', 'publish', 'schedule', 'view_count', 'genre_id', 'created_at')
                 ->orderBy('schedule', 'asc')
@@ -778,7 +778,10 @@ class GenreController extends Controller
 
     public function index()
     {
-        $genres = Genre::all();  // gets all columns and all records
+        $genres = Genre::all()->map(function ($genre) {
+            $genre->thumbnail = url($genre->thumbnail);
+            return $genre;
+        });  // gets all columns and all records
 
         return response()->json($genres);
     }
