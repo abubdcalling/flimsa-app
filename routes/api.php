@@ -68,12 +68,11 @@ Route::middleware('auth:api')->group(function () {
         });
 
         Route::get('content/{id}', [ContentController::class, 'show']);
-        Route::apiResource('ads', AdController::class)->except(['index','show']);
+        Route::apiResource('ads', AdController::class)->except(['index', 'show']);
         Route::get('all-users', [UserController::class, 'showAllUsers']);
 
         Route::post('/cover', [CoverController::class, 'postOrUpdateCover']);
-        Route::get('/cover', [CoverController::class, 'getCover']); // optional
-
+        Route::get('/cover', [CoverController::class, 'getCover']);  // optional
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
@@ -88,9 +87,13 @@ Route::middleware('auth:api')->group(function () {
 
         // Route::get('historys', [ContentController::class, 'History']);
         Route::apiResource('wishlist', WishListController::class);
-        Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
-        Route::get('success', [StripePaymentController::class, 'success']);
-        Route::get('cancel', [StripePaymentController::class, 'cancel']);
+
+        // ---------------new edition start(06/08/2025)--------------
+        // Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+        // Route::get('success', [StripePaymentController::class, 'success']);
+        // Route::get('cancel', [StripePaymentController::class, 'cancel']);
+
+        // ----------------new edition end(06/08/2025)--------------
 
         Route::apiResource('video-tracking', VideoTrackingController::class);
         Route::get('video-tracking/{user_id}/{content_id}', [VideoTrackingController::class, 'show']);
@@ -98,8 +101,6 @@ Route::middleware('auth:api')->group(function () {
         Route::put('users/plan-type', [UserController::class, 'updateMyPlanType']);
         // Route::get('content/{id}', [ContentController::class, 'individualContent']);
         Route::get('payment-status', [StripePaymentController::class, 'paymentStatus']);
-
-
     });
 
     Route::middleware(['role:admin,subscriber'])->group(function () {
@@ -120,5 +121,15 @@ Route::get('upcoming-content', [ContentController::class, 'upcomingContent']);
 Route::get('contents/{id}/related', [ContentController::class, 'relatedContent']);  // for movie related content
 Route::get('contents/{id}/related-season', [ContentController::class, 'relatedSeasonContent']);  // for season related content
 Route::get('subtitles/{id}', [SubtitleController::class, 'show']);
-Route::get('ads', [AdController::class,'index']);
-Route::get('ads/{id}', [AdController::class,'show']);
+Route::get('ads', [AdController::class, 'index']);
+Route::get('ads/{id}', [AdController::class, 'show']);
+
+// ---------------new edition start(06/08/2025)--------------
+
+Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+Route::get('success', [StripePaymentController::class, 'success']);
+Route::get('cancel', [StripePaymentController::class, 'cancel']);
+
+// ----------------new edition end(06/08/2025)--------------
+
+Route::post('/verify-payment-and-create-user', [StripePaymentController::class, 'verifyPaymentAndCreateUser']);
