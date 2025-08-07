@@ -87,7 +87,7 @@ class StripePaymentController extends Controller
                 'price_data' => [
                     'currency' => 'usd',
                     'product_data' => [
-                        'name' => $request->product_name,
+                        'name' => $request->plan_type,
                     ],
                     'unit_amount' => $request->amount * 100,  // convert dollars to cents
                 ],
