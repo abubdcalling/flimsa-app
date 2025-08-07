@@ -9,12 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session as LaravelSession;
 use Illuminate\Support\Facades\Validator;
 use Stripe\Checkout\Session;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
-
-use Stripe\Checkout\Session as StripeSession;
 
 class StripePaymentController extends Controller
 {
@@ -46,47 +45,48 @@ class StripePaymentController extends Controller
     //     ]);
     // }
 
-    // public function PaymentIntent(Request $request)
-    // {
-    //     Stripe::setApiKey(config('services.stripe.secret'));
+    public function PaymentIntent(Request $request)
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
 
-    //     $request->validate([
-    //         'amount' => 'required|numeric|min:1',
-    //         'product_name' => 'required|string|in:withads,withoutads'  // validate allowed values
-    //     ]);
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'plan_type' => 'required|string|in:withads,withoutads'  // validate allowed values
+        ]);
 
-    //     $amount = $request->amount * 100;  // Stripe uses cents
+        $amount = $request->amount * 100;  // Stripe uses cents
 
-    //     $session = Session::create([
-    //         'payment_method_types' => ['card'],
-    //         'line_items' => [[
-    //             'price_data' => [
-    //                 'currency' => 'usd',
-    //                 'product_data' => [
-    //                     'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
-    //                 ],
-    //                 'unit_amount' => $amount,
-    //             ],
-    //             'quantity' => 1,
-    //         ]],
-    //         'mode' => 'payment',
-    //         'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->product_name,
-    //         'cancel_url' => config('app.frontend_url') . '/cancel',
-    //     ]);
+        // Store user metadata in Laravel session (server-side)
+        LaravelSession::put('payment_user_data', [
+            'plan_type' => $request->product_name,
+            'first_name' => $request->first_name,
+            'email' => $request->email,
+            'password' => $request->password,
+            'password_confirmation' => $request->password_confirmation,
+            'gender' => $request->gender,
+        ]);
 
-    //     return response()->json([
-    //         'checkout_url' => $session->url,
-    //         'metadata' => [
-    //             'plan_type' => $request->plan_type,
-    //             'first_name' => $request->first_name,
-    //             'email' => $request->email,
-    //             'password' => $request->password,
-    //             'password_confirmation' => $request->password_confirmation,
-    //             'gender' => $request->gender,
-    //         ]
+        $session = Session::create([
+            'payment_method_types' => ['card'],
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => 'usd',
+                    'product_data' => [
+                        'name' => $request->plan_type,  // dynamic name: "withads" or "withoutads"
+                    ],
+                    'unit_amount' => $amount,
+                ],
+                'quantity' => 1,
+            ]],
+            'mode' => 'payment',
+            'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->plan_type,
+            'cancel_url' => config('app.frontend_url') . '/cancel',
+        ]);
 
-    //     ]);
-    // }
+        return response()->json([
+            'checkout_url' => $session->url,
+        ]);
+    }
 
     // public function checkout(Request $request)
     // {
@@ -165,47 +165,57 @@ class StripePaymentController extends Controller
         ]);
     }
 
-    // public function success(Request $request)
-    // {
-    //     // return 1;
-    //     $user = Auth::user();  // or $request->user()
+    public function success(Request $request)
+    {
+        $userData = LaravelSession::get('payment_user_data');
+        if (!$userData) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User data not found in session.',
+            ], 400);
+        }
 
-    //     if (!$user) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'User not authenticated.'
-    //         ], 401);
-    //     }
+        return $userData;
 
-    //     // Get plan_type from query string (e.g., /success?plan_type=withads)
-    //     $planType = $request->query('plan_type');
+        // return 1;
+        $user = Auth::user();  // or $request->user()
 
-    //     if (!$planType) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Missing plan_type in URL.'
-    //         ], 400);
-    //     }
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not authenticated.'
+            ], 401);
+        }
 
-    //     // 1. Update plan_type in users table
-    //     $user->plan_type = $planType;
-    //     $user->save();
+        // Get plan_type from query string (e.g., /success?plan_type=withads)
+        $planType = $request->query('plan_type');
 
-    //     // 2. Update or insert into user_subscriptions table
-    //     UserSubscription::updateOrCreate(
-    //         ['user_id' => $user->id],
-    //         ['plan_type' => $planType]
-    //     );
+        if (!$planType) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Missing plan_type in URL.'
+            ], 400);
+        }
 
-    //     return response()->json([
-    //         'status' => 'success',
-    //         'message' => 'Payment completed and subscription updated.',
-    //         'user' => $user,
-    //         'subscription' => [
-    //             'plan_type' => $planType,
-    //         ]
-    //     ]);
-    // }
+        // 1. Update plan_type in users table
+        $user->plan_type = $planType;
+        $user->save();
+
+        // 2. Update or insert into user_subscriptions table
+        UserSubscription::updateOrCreate(
+            ['user_id' => $user->id],
+            ['plan_type' => $planType]
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment completed and subscription updated.',
+            'user' => $user,
+            'subscription' => [
+                'plan_type' => $planType,
+            ]
+        ]);
+    }
 
     public function cancel(Request $request)
     {
@@ -323,107 +333,107 @@ class StripePaymentController extends Controller
 
     // ----------------new approach
 
-    public function PaymentIntent(Request $request)
-    {
-        // Validate incoming data
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'plan_type' => 'required|string|in:withads,withoutads',
-            'first_name' => 'required|string|max:255',
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-            'gender' => 'nullable|in:male,female,other',
-        ]);
+    // public function PaymentIntent(Request $request)
+    // {
+    //     // Validate incoming data
+    //     $validated = $request->validate([
+    //         'amount' => 'required|numeric|min:1',
+    //         'plan_type' => 'required|string|in:withads,withoutads',
+    //         'first_name' => 'required|string|max:255',
+    //         'email' => 'required|email',
+    //         'password' => 'required|string|min:6',
+    //         'gender' => 'nullable|in:male,female,other',
+    //     ]);
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+    //     Stripe::setApiKey(config('services.stripe.secret'));
 
-        $amount = $validated['amount'] * 100;  // Convert to cents
+    //     $amount = $validated['amount'] * 100;  // Convert to cents
 
-        // Create Stripe Checkout Session
-        $session = Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'usd',
-                    'product_data' => [
-                        'name' => $validated['plan_type'],
-                    ],
-                    'unit_amount' => $amount,
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => config('app.frontend_url') . '/success?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => config('app.frontend_url') . '/cancel',
-            'metadata' => [
-                'plan_type' => $validated['plan_type'],
-                'first_name' => $validated['first_name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],  // ⚠️ Only for demo, avoid this in production
-                'gender' => $validated['gender'] ?? '',
-            ],
-        ]);
+    //     // Create Stripe Checkout Session
+    //     $session = Session::create([
+    //         'payment_method_types' => ['card'],
+    //         'line_items' => [[
+    //             'price_data' => [
+    //                 'currency' => 'usd',
+    //                 'product_data' => [
+    //                     'name' => $validated['plan_type'],
+    //                 ],
+    //                 'unit_amount' => $amount,
+    //             ],
+    //             'quantity' => 1,
+    //         ]],
+    //         'mode' => 'payment',
+    //         'success_url' => config('app.frontend_url') . '/success?session_id={CHECKOUT_SESSION_ID}',
+    //         'cancel_url' => config('app.frontend_url') . '/cancel',
+    //         'metadata' => [
+    //             'plan_type' => $validated['plan_type'],
+    //             'first_name' => $validated['first_name'],
+    //             'email' => $validated['email'],
+    //             'password' => $validated['password'],  // ⚠️ Only for demo, avoid this in production
+    //             'gender' => $validated['gender'] ?? '',
+    //         ],
+    //     ]);
 
-        return response()->json([
-            'checkout_url' => $session->url,
-            'session_id' => $session->id,
-        ]);
-    }
+    //     return response()->json([
+    //         'checkout_url' => $session->url,
+    //         'session_id' => $session->id,
+    //     ]);
+    // }
 
-    public function success(Request $request)
-    {
-        $sessionId = $request->query('session_id');
+    // public function success(Request $request)
+    // {
+    //     $sessionId = $request->query('session_id');
 
-        if (!$sessionId) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Missing session_id in URL.'
-            ], 400);
-        }
+    //     if (!$sessionId) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Missing session_id in URL.'
+    //         ], 400);
+    //     }
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+    //     Stripe::setApiKey(config('services.stripe.secret'));
 
-        try {
-            // Retrieve session from Stripe
-            $session = StripeSession::retrieve($sessionId);
-            $metadata = $session->metadata;
+    //     try {
+    //         // Retrieve session from Stripe
+    //         $session = StripeSession::retrieve($sessionId);
+    //         $metadata = $session->metadata;
 
-            // Check if user already exists
-            if (User::where('email', $metadata->email)->exists()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'User with this email already exists.'
-                ], 409);
-            }
+    //         // Check if user already exists
+    //         if (User::where('email', $metadata->email)->exists()) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'User with this email already exists.'
+    //             ], 409);
+    //         }
 
-            // Create the user
-            $user = User::create([
-                'first_name' => $metadata->first_name,
-                'email' => $metadata->email,
-                'password' => Hash::make($metadata->password),
-                'gender' => $metadata->gender ?? null,
-                'plan_type' => $metadata->plan_type,
-            ]);
+    //         // Create the user
+    //         $user = User::create([
+    //             'first_name' => $metadata->first_name,
+    //             'email' => $metadata->email,
+    //             'password' => Hash::make($metadata->password),
+    //             'gender' => $metadata->gender ?? null,
+    //             'plan_type' => $metadata->plan_type,
+    //         ]);
 
-            // Save subscription
-            UserSubscription::create([
-                'user_id' => $user->id,
-                'plan_type' => $metadata->plan_type,
-            ]);
+    //         // Save subscription
+    //         UserSubscription::create([
+    //             'user_id' => $user->id,
+    //             'plan_type' => $metadata->plan_type,
+    //         ]);
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Payment successful. User created.',
-                'user' => $user->only(['id', 'first_name', 'email', 'gender', 'plan_type']),
-                'subscription' => [
-                    'plan_type' => $metadata->plan_type,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to complete payment or create user: ' . $e->getMessage()
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Payment successful. User created.',
+    //             'user' => $user->only(['id', 'first_name', 'email', 'gender', 'plan_type']),
+    //             'subscription' => [
+    //                 'plan_type' => $metadata->plan_type,
+    //             ]
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Failed to complete payment or create user: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 }
