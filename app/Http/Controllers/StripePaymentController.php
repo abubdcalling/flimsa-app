@@ -58,7 +58,6 @@ class StripePaymentController extends Controller
 
         // Store user metadata in Laravel session (server-side)
         LaravelSession::put('payment_user_data', [
-            'plan_type' => $request->product_name,
             'first_name' => $request->first_name,
             'email' => $request->email,
             'password' => $request->password,
@@ -175,42 +174,52 @@ class StripePaymentController extends Controller
             ], 400);
         }
 
-        return $userData;
+        // return $userData;
+        // Create user
+        
 
         // return 1;
-        $user = Auth::user();  // or $request->user()
+        // $user = Auth::user();  // or $request->user()
 
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User not authenticated.'
-            ], 401);
-        }
+        // if (!$user) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'User not authenticated.'
+        //     ], 401);
+        // }
 
-        // Get plan_type from query string (e.g., /success?plan_type=withads)
+        // // Get plan_type from query string (e.g., /success?plan_type=withads)
         $planType = $request->query('plan_type');
 
-        if (!$planType) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Missing plan_type in URL.'
-            ], 400);
-        }
+        $userData = User::create([
+            'first_name' => $userData['first_name'],
+            'email' => $userData['email'],
+            'password' => Hash::make($userData['password']),
+            'gender' => $userData['gender'],
+            'plan_type' => $planType,
+        ]);
 
-        // 1. Update plan_type in users table
-        $user->plan_type = $planType;
-        $user->save();
+        // if (!$planType) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'Missing plan_type in URL.'
+        //     ], 400);
+        // }
+
+        // // 1. Update plan_type in users table
+        // $user->plan_type = $planType;
+        // $user->save();
 
         // 2. Update or insert into user_subscriptions table
         UserSubscription::updateOrCreate(
-            ['user_id' => $user->id],
+            ['user_id' => $userData->id],
             ['plan_type' => $planType]
         );
 
         return response()->json([
             'status' => 'success',
             'message' => 'Payment completed and subscription updated.',
-            'user' => $user,
+            'user' => $userData,
             'subscription' => [
                 'plan_type' => $planType,
             ]
