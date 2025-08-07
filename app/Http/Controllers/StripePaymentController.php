@@ -57,13 +57,13 @@ class StripePaymentController extends Controller
         $amount = $request->amount * 100;  // Stripe uses cents
 
         // Store user metadata in Laravel session (server-side)
-        // LaravelSession::put('payment_user_data', [
-        //     'first_name' => $request->first_name,
-        //     'email' => $request->email,
-        //     'password' => $request->password,
-        //     'password_confirmation' => $request->password_confirmation,
-        //     'gender' => $request->gender,
-        // ]);
+        LaravelSession::put('payment_user_data', [
+            'first_name' => $request->first_name,
+            'email' => $request->email,
+            'password' => $request->password,
+            // 'password_confirmation' => $request->password_confirmation,
+            'gender' => $request->gender,
+        ]);
 
         $session = Session::create([
             'payment_method_types' => ['card'],
@@ -166,17 +166,16 @@ class StripePaymentController extends Controller
 
     public function success(Request $request)
     {
-        // $userData = LaravelSession::get('payment_user_data');
-        // if (!$userData) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'User data not found in session.',
-        //     ], 400);
-        // }
+        $userData = LaravelSession::get('payment_user_data');
+        if (!$userData) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User data not found in session.',
+            ], 400);
+        }
 
         // return $userData;
         // Create user
-        
 
         // return 1;
         $user = Auth::user();  // or $request->user()
@@ -220,6 +219,7 @@ class StripePaymentController extends Controller
             'status' => 'success',
             'message' => 'Payment completed and subscription updated.',
             'user' => $user,
+            'userData' => $userData,
             'subscription' => [
                 'plan_type' => $planType,
             ]
