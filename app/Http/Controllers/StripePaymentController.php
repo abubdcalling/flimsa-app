@@ -106,7 +106,10 @@ class StripePaymentController extends Controller
             ]
         ]);
 
-        return response()->json(['id' => $session->id]);
+        return response()->json([
+            'id' => $session->id,
+            'url' => $session->url 
+        ]);
     }
 
     public function index(): JsonResponse
