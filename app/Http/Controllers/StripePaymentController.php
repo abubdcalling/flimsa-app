@@ -230,7 +230,7 @@ class StripePaymentController extends Controller
         Stripe::setApiKey(config('services.stripe.secret'));
 
         try {
-            return $request->session_id;
+            // return $request->session_id;
             $session = Session::retrieve($request->session_id);
 
             if ($session->payment_status !== 'paid') {
