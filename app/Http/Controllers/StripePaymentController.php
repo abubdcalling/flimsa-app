@@ -57,12 +57,21 @@ class StripePaymentController extends Controller
         $amount = $request->amount * 100;  // Stripe uses cents
 
         // Store user metadata in Laravel session (server-side)
-        LaravelSession::put('payment_user_data', [
-            'first_name' => $request->first_name,
-            'email' => $request->email,
-            'password' => $request->password,
-            // 'password_confirmation' => $request->password_confirmation,
-            'gender' => $request->gender,
+        // LaravelSession::put('payment_user_data', [
+        //     'first_name' => $request->first_name,
+        //     'email' => $request->email,
+        //     'password' => $request->password,
+        //     // 'password_confirmation' => $request->password_confirmation,
+        //     'gender' => $request->gender,
+        // ]);
+
+        session([
+            'pending_user' => [
+                'first_name' => $request->first_name,
+                'email' => $request->email,
+                'password' => bcrypt($request->password), // hash early
+                'gender' => $request->gender,
+            ]
         ]);
 
         $session = Session::create([
@@ -178,6 +187,7 @@ class StripePaymentController extends Controller
         // Create user
 
         // return 1;
+        $pendingUser = session('pending_user');
         $user = Auth::user();  // or $request->user()
 
         if (!$user) {
@@ -219,7 +229,7 @@ class StripePaymentController extends Controller
             'status' => 'success',
             'message' => 'Payment completed and subscription updated.',
             'user' => $user,
-            // 'userData' => $userData,
+            'pendingUser' => $pendingUser,
             'subscription' => [
                 'plan_type' => $planType,
             ]
