@@ -188,25 +188,25 @@ class StripePaymentController extends Controller
 
         // return 1;
         $pendingUser = session('pending_user');
-        $user = Auth::user();  // or $request->user()
+        // $user = Auth::user(); 
 
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User not authenticated.'
-            ], 401);
-        }
+        // if (!$user) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'User not authenticated.'
+        //     ], 401);
+        // }
 
         // // Get plan_type from query string (e.g., /success?plan_type=withads)
         $planType = $request->query('plan_type');
 
-        // $userData = User::create([
-        //     'first_name' => $userData['first_name'],
-        //     'email' => $userData['email'],
-        //     'password' => Hash::make($userData['password']),
-        //     'gender' => $userData['gender'],
-        //     'plan_type' => $planType,
-        // ]);
+        $userData = User::create([
+            'first_name' => $pendingUser['first_name'],
+            'email' => $pendingUser['email'],
+            'password' => Hash::make($pendingUser['password']),
+            'gender' => $pendingUser['gender'],
+            // 'plan_type' => $planType,
+        ]);
 
         if (!$planType) {
             return response()->json([
@@ -216,19 +216,19 @@ class StripePaymentController extends Controller
         }
 
         // 1. Update plan_type in users table
-        $user->plan_type = $planType;
-        $user->save();
+        $userData->plan_type = $planType;
+        $userData->save();
 
         // 2. Update or insert into user_subscriptions table
         UserSubscription::updateOrCreate(
-            ['user_id' => $user->id],
+            ['user_id' => $userData->id],
             ['plan_type' => $planType]
         );
 
         return response()->json([
             'status' => 'success',
             'message' => 'Payment completed and subscription updated.',
-            'user' => $user,
+            'user' => $userData,
             'pendingUser' => $pendingUser,
             'subscription' => [
                 'plan_type' => $planType,
