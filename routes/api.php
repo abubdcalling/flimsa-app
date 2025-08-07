@@ -101,6 +101,9 @@ Route::middleware('auth:api')->group(function () {
         Route::put('users/plan-type', [UserController::class, 'updateMyPlanType']);
         // Route::get('content/{id}', [ContentController::class, 'individualContent']);
         Route::get('payment-status', [StripePaymentController::class, 'paymentStatus']);
+
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
     });
 
     Route::middleware(['role:admin,subscriber'])->group(function () {

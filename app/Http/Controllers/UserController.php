@@ -5,16 +5,66 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
+public function destroy($id)
+{
+    $user = User::find($id);
+
+    if (!$user) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'User not found.'
+        ], 404);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        // Safely detach roles only if method exists and model uses HasRoles
+        if (method_exists($user, 'syncRoles')) {
+            try {
+                $user->syncRoles([]); // detach roles
+            } catch (\Throwable $e) {
+                // Optional: log error or skip silently
+            }
+        }
+
+        // Delete related records
+        DB::table('devices')->where('user_id', $id)->delete();
+        DB::table('histories')->where('user_id', $id)->delete();
+        DB::table('likes')->where('user_id', $id)->delete();
+        DB::table('user_subscriptions')->where('user_id', $id)->delete();
+
+        // Delete user
+        $user->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User and related data deleted successfully.'
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to delete user. ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
     public function showAllUsers(Request $request)
     {
         try {
             $perPage = $request->input('per_page', 10);  // Default 10 users per page
 
-            $planType = $request->input('plan_type');    // Optional plan_type filter
+            $planType = $request->input('plan_type');  // Optional plan_type filter
 
             $query = User::query();
 
