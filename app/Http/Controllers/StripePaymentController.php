@@ -166,13 +166,13 @@ class StripePaymentController extends Controller
 
     public function success(Request $request)
     {
-        $userData = LaravelSession::get('payment_user_data');
-        if (!$userData) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User data not found in session.',
-            ], 400);
-        }
+        // $userData = LaravelSession::get('payment_user_data');
+        // if (!$userData) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'User data not found in session.',
+        //     ], 400);
+        // }
 
         // return $userData;
         // Create user
@@ -219,7 +219,7 @@ class StripePaymentController extends Controller
             'status' => 'success',
             'message' => 'Payment completed and subscription updated.',
             'user' => $user,
-            'userData' => $userData,
+            // 'userData' => $userData,
             'subscription' => [
                 'plan_type' => $planType,
             ]
