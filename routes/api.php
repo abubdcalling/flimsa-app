@@ -89,9 +89,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('wishlist', WishListController::class);
 
         // ---------------new edition start(06/08/2025)--------------
-        Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
-        Route::get('success', [StripePaymentController::class, 'success']);
-        Route::get('cancel', [StripePaymentController::class, 'cancel']);
+        // Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+        // Route::get('success', [StripePaymentController::class, 'success']);
+        // Route::get('cancel', [StripePaymentController::class, 'cancel']);
 
         // ----------------new edition end(06/08/2025)--------------
 
@@ -126,9 +126,11 @@ Route::get('ads/{id}', [AdController::class, 'show']);
 
 // ---------------new edition start(06/08/2025)--------------
 
-// Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
-// Route::get('success', [StripePaymentController::class, 'success']);
-// Route::get('cancel', [StripePaymentController::class, 'cancel']);
+
+
+        Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+        Route::get('success', [StripePaymentController::class, 'success']);
+        Route::get('cancel', [StripePaymentController::class, 'cancel']);
 
 // ----------------new edition end(06/08/2025)--------------
 
