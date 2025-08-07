@@ -51,7 +51,7 @@ class StripePaymentController extends Controller
 
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'plan_type' => 'required|string|in:withads,withoutads'  // validate allowed values
+            'product_name' => 'required|string|in:withads,withoutads'  // validate allowed values
         ]);
 
         $amount = $request->amount * 100;  // Stripe uses cents
@@ -71,14 +71,14 @@ class StripePaymentController extends Controller
                 'price_data' => [
                     'currency' => 'usd',
                     'product_data' => [
-                        'name' => $request->plan_type,  // dynamic name: "withads" or "withoutads"
+                        'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
                     ],
                     'unit_amount' => $amount,
                 ],
                 'quantity' => 1,
             ]],
             'mode' => 'payment',
-            'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->plan_type,
+            'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->product_name,
             'cancel_url' => config('app.frontend_url') . '/cancel',
         ]);
 
