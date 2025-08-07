@@ -57,13 +57,13 @@ class StripePaymentController extends Controller
         $amount = $request->amount * 100;  // Stripe uses cents
 
         // Store user metadata in Laravel session (server-side)
-        LaravelSession::put('payment_user_data', [
-            'first_name' => $request->first_name,
-            'email' => $request->email,
-            'password' => $request->password,
-            'password_confirmation' => $request->password_confirmation,
-            'gender' => $request->gender,
-        ]);
+        // LaravelSession::put('payment_user_data', [
+        //     'first_name' => $request->first_name,
+        //     'email' => $request->email,
+        //     'password' => $request->password,
+        //     'password_confirmation' => $request->password_confirmation,
+        //     'gender' => $request->gender,
+        // ]);
 
         $session = Session::create([
             'payment_method_types' => ['card'],
@@ -78,7 +78,7 @@ class StripePaymentController extends Controller
                 'quantity' => 1,
             ]],
             'mode' => 'payment',
-            'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->plan_type .'?session_id={CHECKOUT_SESSION_ID}',
+            'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->plan_type,
             'cancel_url' => config('app.frontend_url') . '/cancel',
         ]);
 
@@ -166,60 +166,60 @@ class StripePaymentController extends Controller
 
     public function success(Request $request)
     {
-        $userData = LaravelSession::get('payment_user_data');
-        if (!$userData) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User data not found in session.',
-            ], 400);
-        }
+        // $userData = LaravelSession::get('payment_user_data');
+        // if (!$userData) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'User data not found in session.',
+        //     ], 400);
+        // }
 
         // return $userData;
         // Create user
         
 
         // return 1;
-        // $user = Auth::user();  // or $request->user()
+        $user = Auth::user();  // or $request->user()
 
-        // if (!$user) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'User not authenticated.'
-        //     ], 401);
-        // }
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not authenticated.'
+            ], 401);
+        }
 
         // // Get plan_type from query string (e.g., /success?plan_type=withads)
         $planType = $request->query('plan_type');
 
-        $userData = User::create([
-            'first_name' => $userData['first_name'],
-            'email' => $userData['email'],
-            'password' => Hash::make($userData['password']),
-            'gender' => $userData['gender'],
-            'plan_type' => $planType,
-        ]);
+        // $userData = User::create([
+        //     'first_name' => $userData['first_name'],
+        //     'email' => $userData['email'],
+        //     'password' => Hash::make($userData['password']),
+        //     'gender' => $userData['gender'],
+        //     'plan_type' => $planType,
+        // ]);
 
-        // if (!$planType) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'Missing plan_type in URL.'
-        //     ], 400);
-        // }
+        if (!$planType) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Missing plan_type in URL.'
+            ], 400);
+        }
 
-        // // 1. Update plan_type in users table
-        // $user->plan_type = $planType;
-        // $user->save();
+        // 1. Update plan_type in users table
+        $user->plan_type = $planType;
+        $user->save();
 
         // 2. Update or insert into user_subscriptions table
         UserSubscription::updateOrCreate(
-            ['user_id' => $userData->id],
+            ['user_id' => $user->id],
             ['plan_type' => $planType]
         );
 
         return response()->json([
             'status' => 'success',
             'message' => 'Payment completed and subscription updated.',
-            'user' => $userData,
+            'user' => $user,
             'subscription' => [
                 'plan_type' => $planType,
             ]
