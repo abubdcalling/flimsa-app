@@ -9,11 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Stripe\Checkout\Session;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
-use Illuminate\Support\Facades\Validator;
-
 
 class StripePaymentController extends Controller
 {
@@ -45,16 +44,42 @@ class StripePaymentController extends Controller
     //     ]);
     // }
 
-    public function PaymentIntent(Request $request)
+    // public function PaymentIntent(Request $request)
+    // {
+    //     Stripe::setApiKey(config('services.stripe.secret'));
+
+    //     $request->validate([
+    //         'amount' => 'required|numeric|min:1',
+    //         'product_name' => 'required|string|in:withads,withoutads'  // validate allowed values
+    //     ]);
+
+    //     $amount = $request->amount * 100;  // Stripe uses cents
+
+    //     $session = Session::create([
+    //         'payment_method_types' => ['card'],
+    //         'line_items' => [[
+    //             'price_data' => [
+    //                 'currency' => 'usd',
+    //                 'product_data' => [
+    //                     'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
+    //                 ],
+    //                 'unit_amount' => $amount,
+    //             ],
+    //             'quantity' => 1,
+    //         ]],
+    //         'mode' => 'payment',
+    //         'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->product_name,
+    //         'cancel_url' => config('app.frontend_url') . '/cancel',
+    //     ]);
+
+    //     return response()->json([
+    //         'checkout_url' => $session->url,
+    //     ]);
+    // }
+
+    public function checkout(Request $request)
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'product_name' => 'required|string|in:withads,withoutads'  // validate allowed values
-        ]);
-
-        $amount = $request->amount * 100;  // Stripe uses cents
+        Stripe::setApiKey(env('STRIPE_SECRET'));
 
         $session = Session::create([
             'payment_method_types' => ['card'],
@@ -62,20 +87,26 @@ class StripePaymentController extends Controller
                 'price_data' => [
                     'currency' => 'usd',
                     'product_data' => [
-                        'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
+                        'name' => $request->product_name,
                     ],
-                    'unit_amount' => $amount,
+                    'unit_amount' => $request->amount * 100,  // convert dollars to cents
                 ],
                 'quantity' => 1,
             ]],
             'mode' => 'payment',
-            'success_url' => config('app.frontend_url') . '/success?plan_type=' . $request->product_name,
-            'cancel_url' => config('app.frontend_url') . '/cancel',
+            'success_url' => $request->success_url . '&session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => $request->cancel_url,
+            'metadata' => [
+                'plan_type' => $request->plan_type,
+                'first_name' => $request->first_name,
+                'email' => $request->email,
+                'password' => $request->password,
+                'password_confirmation' => $request->password_confirmation,
+                'gender' => $request->gender,
+            ]
         ]);
 
-        return response()->json([
-            'checkout_url' => $session->url,
-        ]);
+        return response()->json(['id' => $session->id]);
     }
 
     public function index(): JsonResponse
@@ -207,8 +238,6 @@ class StripePaymentController extends Controller
             ]
         ]);
     }
-
-
 
     public function verifyPaymentAndCreateUser(Request $request)
     {
