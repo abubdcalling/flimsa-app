@@ -205,7 +205,7 @@ class StripePaymentController extends Controller
             'email' => $pendingUser['email'],
             'password' => Hash::make($pendingUser['password']),
             'gender' => $pendingUser['gender'],
-            // 'plan_type' => $planType,
+            'plan_type' => $planType,
         ]);
 
         if (!$planType) {
@@ -216,8 +216,8 @@ class StripePaymentController extends Controller
         }
 
         // 1. Update plan_type in users table
-        $userData->plan_type = $planType;
-        $userData->save();
+        // $userData->plan_type = $planType;
+        // $userData->save();
 
         // 2. Update or insert into user_subscriptions table
         UserSubscription::updateOrCreate(
