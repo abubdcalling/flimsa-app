@@ -261,7 +261,7 @@ class StripePaymentController extends Controller
         // ✅ Create or update subscription
         UserSubscription::updateOrCreate(
             ['user_id' => $user->id],
-            ['plan_type' => $validated['plan_type']]
+            ['plan_type' => $validated['product_name']]
         );
 
         // ✅ Respond with success
@@ -270,7 +270,7 @@ class StripePaymentController extends Controller
             'message' => 'User created and subscription activated.',
             'user' => $user,
             'subscription' => [
-                'plan_type' => $validated['plan_type'],
+                'plan_type' => $validated['product_name'],
             ]
         ]);
     }
