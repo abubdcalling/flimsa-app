@@ -236,8 +236,6 @@ class StripePaymentController extends Controller
     //     ]);
     // }
 
-
-
     public function success(Request $request)
     {
         // ✅ Validate input
@@ -275,12 +273,41 @@ class StripePaymentController extends Controller
         ]);
     }
 
+    // public function cancel(Request $request)
+    // {
+    //     return response()->json([
+    //         'status' => 'cancelled',
+    //         'message' => 'Payment was cancelled.'
+    //     ]);
+    // }
+
     public function cancel(Request $request)
     {
-        return response()->json([
-            'status' => 'cancelled',
-            'message' => 'Payment was cancelled.'
+        // ✅ Validate incoming email
+        $validated = $request->validate([
+            'email' => 'required|email|exists:users,email',
         ]);
+
+        // ✅ Find user where plan_type is still 'none' (i.e. not paid)
+        $user = User::where('email', $validated['email'])
+            ->where('plan_type', 'none')
+            ->first();
+
+        // ✅ Delete user if found
+        if ($user) {
+            $user->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User deleted due to canceled payment.',
+            ]);
+        }
+
+        // ❌ User not found or already upgraded
+        return response()->json([
+            'status' => 'error',
+            'message' => 'User not found or already subscribed.',
+        ], 404);
     }
 
     // public function success(Request $request)
