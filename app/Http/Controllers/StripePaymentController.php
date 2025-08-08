@@ -65,14 +65,14 @@ class StripePaymentController extends Controller
         //     'gender' => $request->gender,
         // ]);
 
-        session([
-            'pending_user' => [
-                'first_name' => $request->first_name,
-                'email' => $request->email,
-                'password' => bcrypt($request->password), // hash early
-                'gender' => $request->gender,
-            ]
-        ]);
+        // session([
+        //     'pending_user' => [
+        //         'first_name' => $request->first_name,
+        //         'email' => $request->email,
+        //         'password' => bcrypt($request->password), // hash early
+        //         'gender' => $request->gender,
+        //     ]
+        // ]);
 
         $session = Session::create([
             'payment_method_types' => ['card'],
@@ -173,65 +173,104 @@ class StripePaymentController extends Controller
         ]);
     }
 
+    // public function success(Request $request)
+    // {
+    //     // $userData = LaravelSession::get('payment_user_data');
+    //     // if (!$userData) {
+    //     //     return response()->json([
+    //     //         'status' => 'error',
+    //     //         'message' => 'User data not found in session.',
+    //     //     ], 400);
+    //     // }
+
+    //     // return $userData;
+    //     // Create user
+
+    //     // return 1;
+    //     $pendingUser = session('pending_user');
+    //     // $user = Auth::user();
+
+    //     // if (!$user) {
+    //     //     return response()->json([
+    //     //         'status' => 'error',
+    //     //         'message' => 'User not authenticated.'
+    //     //     ], 401);
+    //     // }
+
+    //     // // Get plan_type from query string (e.g., /success?plan_type=withads)
+    //     $planType = $request->query('plan_type');
+
+    //     $userData = User::create([
+    //         'first_name' => $pendingUser['first_name'],
+    //         'email' => $pendingUser['email'],
+    //         'password' => Hash::make($pendingUser['password']),
+    //         'gender' => $pendingUser['gender'],
+    //         'plan_type' => $planType,
+    //     ]);
+
+    //     if (!$planType) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Missing plan_type in URL.'
+    //         ], 400);
+    //     }
+
+    //     // 1. Update plan_type in users table
+    //     // $userData->plan_type = $planType;
+    //     // $userData->save();
+
+    //     // 2. Update or insert into user_subscriptions table
+    //     UserSubscription::updateOrCreate(
+    //         ['user_id' => $userData->id],
+    //         ['plan_type' => $planType]
+    //     );
+
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'message' => 'Payment completed and subscription updated.',
+    //         'user' => $userData,
+    //         'pendingUser' => $pendingUser,
+    //         'subscription' => [
+    //             'plan_type' => $planType,
+    //         ]
+    //     ]);
+    // }
+
+
+
     public function success(Request $request)
     {
-        // $userData = LaravelSession::get('payment_user_data');
-        // if (!$userData) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'User data not found in session.',
-        //     ], 400);
-        // }
-
-        // return $userData;
-        // Create user
-
-        // return 1;
-        $pendingUser = session('pending_user');
-        // $user = Auth::user(); 
-
-        // if (!$user) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'message' => 'User not authenticated.'
-        //     ], 401);
-        // }
-
-        // // Get plan_type from query string (e.g., /success?plan_type=withads)
-        $planType = $request->query('plan_type');
-
-        $userData = User::create([
-            'first_name' => $pendingUser['first_name'],
-            'email' => $pendingUser['email'],
-            'password' => Hash::make($pendingUser['password']),
-            'gender' => $pendingUser['gender'],
-            'plan_type' => $planType,
+        // ✅ Validate input
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'gender' => 'required|in:male,female,other',
+            'plan_type' => 'required|in:withads,withoutads',
         ]);
 
-        if (!$planType) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Missing plan_type in URL.'
-            ], 400);
-        }
+        // ✅ Create the user
+        $user = User::create([
+            'first_name' => $validated['first_name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'gender' => $validated['gender'],
+            'plan_type' => $validated['plan_type'],
+        ]);
 
-        // 1. Update plan_type in users table
-        // $userData->plan_type = $planType;
-        // $userData->save();
-
-        // 2. Update or insert into user_subscriptions table
+        // ✅ Create or update subscription
         UserSubscription::updateOrCreate(
-            ['user_id' => $userData->id],
-            ['plan_type' => $planType]
+            ['user_id' => $user->id],
+            ['plan_type' => $validated['plan_type']]
         );
 
+        // ✅ Respond with success
         return response()->json([
             'status' => 'success',
-            'message' => 'Payment completed and subscription updated.',
-            'user' => $userData,
-            'pendingUser' => $pendingUser,
+            'message' => 'User created and subscription activated.',
+            'user' => $user,
             'subscription' => [
-                'plan_type' => $planType,
+                'plan_type' => $validated['plan_type'],
             ]
         ]);
     }

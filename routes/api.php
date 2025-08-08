@@ -132,7 +132,7 @@ Route::get('ads/{id}', [AdController::class, 'show']);
 
 
         Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
-        Route::get('success', [StripePaymentController::class, 'success']);
+        Route::post('success', [StripePaymentController::class, 'success']);
         Route::get('cancel', [StripePaymentController::class, 'cancel']);
 
 // ----------------new edition end(06/08/2025)--------------
