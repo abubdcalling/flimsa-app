@@ -246,7 +246,7 @@ class StripePaymentController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'gender' => 'required|in:male,female,other',
-            'plan_type' => 'required|in:withads,withoutads',
+            'product_name' => 'required|in:withads,withoutads',
         ]);
 
         // ✅ Create the user
@@ -255,7 +255,7 @@ class StripePaymentController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'gender' => $validated['gender'],
-            'plan_type' => $validated['plan_type'],
+            'plan_type' => $validated['product_name'],
         ]);
 
         // ✅ Create or update subscription
