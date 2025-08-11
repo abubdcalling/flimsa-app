@@ -26,9 +26,11 @@ class PersonController extends Controller
                 });
             }
 
+            $people = $query->get();
+
             return response()->json([
                 'status' => 'success',
-                'data' => $query->paginate(10)
+                'data' => $people
             ]);
         } catch (\Exception $e) {
             return response()->json([
