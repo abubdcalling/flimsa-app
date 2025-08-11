@@ -26,7 +26,7 @@ class WishListController extends Controller
 
             // Get content IDs from wishlists where isWished is true
             $contentIds = WishList::where('user_id', $userId)
-                // ->where('isWished', true)
+                ->where('isWished', true)
                 ->pluck('content_id');
 
             if ($contentIds->isEmpty()) {

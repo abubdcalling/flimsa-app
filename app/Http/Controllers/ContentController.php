@@ -855,12 +855,12 @@ class ContentController extends Controller
             // Check if liked
             $isLiked = \App\Models\Like::where('user_id', $userId)
                 ->where('content_id', $id)
-                ->exists();
+                ->value('is_liked');;
 
             // Check if wishlisted
             $isWishlisted = \App\Models\WishList::where('user_id', $userId)
                 ->where('content_id', $id)
-                ->exists();
+                ->value('isWished');;
         }
 
         // return response()->json($content);
