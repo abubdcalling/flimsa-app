@@ -869,7 +869,7 @@ class ContentController extends Controller
             'success' => true,
             'data' => $content,
             'liked' => $isLiked,
-            'wishlisted' => $isWishlisted,
+            'wishlisted' => (bool)$isWishlisted,
             'elapsed_time' => $elapsedTime,
         ]);
     }
