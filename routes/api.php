@@ -16,6 +16,7 @@ use App\Http\Controllers\WishListController;
 use App\Models\WishList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PersonController;
 
 /*
  * |--------------------------------------------------------------------------
@@ -49,6 +50,7 @@ Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api')
 Route::middleware('auth:api')->group(function () {
     Route::middleware(['role:admin'])->group(function () {
         // Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
+        
 
         Route::post('subtitles/{contentId}', [SubtitleController::class, 'store']);
         Route::get('subtitles', [SubtitleController::class, 'index']);
@@ -73,6 +75,9 @@ Route::middleware('auth:api')->group(function () {
 
         Route::post('/cover', [CoverController::class, 'postOrUpdateCover']);
         Route::get('/cover', [CoverController::class, 'getCover']);  // optional
+
+
+
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
@@ -138,3 +143,4 @@ Route::get('ads/{id}', [AdController::class, 'show']);
 // ----------------new edition end(06/08/2025)--------------
 
 Route::post('/verify-payment-and-create-user', [StripePaymentController::class, 'verifyPaymentAndCreateUser']);
+Route::apiResource('people', PersonController::class);
