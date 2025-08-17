@@ -21,6 +21,48 @@ use Illuminate\Validation\ValidationException;
 
 class ContentController extends Controller
 {
+    public function getByContentId($id, Request $request)
+    {
+        $content = Content::with('genres', 'subtitles')->find($id);
+
+        if (!$content) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Content not found.',
+            ], 404);
+        }
+
+        // Increment view_count
+        $content->increment('view_count');
+
+        // Initialize values
+        $isLiked = false;
+        $isWishlisted = false;
+        $elapsedTime = null;
+
+        // Optional: device-based tracking
+        $deviceId = $request->query('device_id');
+
+        if ($deviceId) {
+            $latestVideo = Video::where('content_id', $id)
+                ->where('device_id', $deviceId)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($latestVideo) {
+                $elapsedTime = $latestVideo->elapsed_time;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $content,
+            'liked' => $isLiked,
+            'wishlisted' => $isWishlisted,
+            'elapsed_time' => $elapsedTime,
+        ]);
+    }
+
     public function dashbaord()
     {
         try {
@@ -869,7 +911,7 @@ class ContentController extends Controller
             'success' => true,
             'data' => $content,
             'liked' => $isLiked,
-            'wishlisted' => (bool)$isWishlisted,
+            'wishlisted' => (bool) $isWishlisted,
             'elapsed_time' => $elapsedTime,
         ]);
     }

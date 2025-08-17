@@ -144,3 +144,5 @@ Route::get('ads/{id}', [AdController::class, 'show']);
 
 Route::post('/verify-payment-and-create-user', [StripePaymentController::class, 'verifyPaymentAndCreateUser']);
 Route::apiResource('people', PersonController::class);
+
+Route::get('getByContentId/{id}', [ContentController::class, 'getByContentId']);
