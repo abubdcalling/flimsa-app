@@ -29,8 +29,10 @@ class StripePaymentController extends Controller
         $amount = (int) ($request->amount * 100);
 
         $prices = [
-            'withads' => 'price_1S0yg2FtHzDQUzoKAMutBmKa',  // replace with your Stripe Price ID
-            'withoutads' => 'price_1S0ygPFtHzDQUzoKPJYzyLkF'  // replace with your Stripe Price ID
+            // 'withads' => 'price_1S0yg2FtHzDQUzoKAMutBmKa',  // live
+            // 'withoutads' => 'price_1S0ygPFtHzDQUzoKPJYzyLkF'  // live
+            'withads' => 'price_1S10xIFtHzDQUzoKDMbGEnfH',  // test          
+            'withoutads' => 'price_1S10xyFtHzDQUzoKjaa85AlE'  // test
         ];
 
         $session = Session::create([
