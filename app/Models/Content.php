@@ -14,7 +14,7 @@ class Content extends Model
     protected $fillable = [
         'video1', 'title', 'description', 'publish',
         'schedule', 'genre_id', 'image', 'view_count',
-        'profile_pic', 'director_name', 'duration'
+        'profile_pic', 'director_name', 'duration','episode_id'
     ];
     protected $casts = [
         'video1' => 'array', // Decode JSON to array on retrieval
