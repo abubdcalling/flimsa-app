@@ -38,12 +38,14 @@ class StripePaymentController extends Controller
             'line_items' => [[
                 'price_data' => [
                     'currency' => 'usd',
+                    'recurring' => ['interval' => 'month'],
+                    'unit_amount' => $amount,
                     'product_data' => [
                         // 'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
                         'name' => $prices[$request->product_name],
-                        'recurring' => ['interval' => 'month'],
+                        
                     ],
-                    'unit_amount' => $amount,
+                    
                 ],
                 'quantity' => 1,
             ]],
