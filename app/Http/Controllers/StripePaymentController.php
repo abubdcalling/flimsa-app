@@ -26,7 +26,7 @@ class StripePaymentController extends Controller
             'product_name' => 'required|string|in:withads,withoutads'
         ]);
 
-        $amount = $request->amount * 100;
+        $amount = (int) ($request->amount * 100);
 
         $prices = [
             'withads' => 'price_1S0yg2FtHzDQUzoKAMutBmKa',  // replace with your Stripe Price ID
@@ -41,6 +41,7 @@ class StripePaymentController extends Controller
                     'product_data' => [
                         // 'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
                         'name' => $prices[$request->product_name],
+                        'recurring' => ['interval' => 'month'],
                     ],
                     'unit_amount' => $amount,
                 ],
@@ -56,8 +57,6 @@ class StripePaymentController extends Controller
             'checkout_url' => $session->url,
         ]);
     }
-
-
 
     public function index(): JsonResponse
     {
@@ -131,8 +130,6 @@ class StripePaymentController extends Controller
             ]
         ]);
     }
-
-
 
     public function cancel(Request $request)
     {
@@ -263,4 +260,3 @@ class StripePaymentController extends Controller
         return response()->json(['status' => 'success']);
     }
 }
-
