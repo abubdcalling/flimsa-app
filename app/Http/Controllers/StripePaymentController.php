@@ -17,19 +17,21 @@ use Stripe\Stripe;
 
 class StripePaymentController extends Controller
 {
-    
-
     public function PaymentIntent(Request $request)
     {
         Stripe::setApiKey(config('services.stripe.secret'));
 
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'product_name' => 'required|string|in:withads,withoutads'  // validate allowed values
+            'product_name' => 'required|string|in:withads,withoutads'
         ]);
 
-        $amount = $request->amount * 100;  // Stripe uses cents
+        $amount = $request->amount * 100;
 
+        $prices = [
+            'withads' => 'price_1S0yg2FtHzDQUzoKAMutBmKa',  // replace with your Stripe Price ID
+            'withoutads' => 'price_1S0ygPFtHzDQUzoKPJYzyLkF'  // replace with your Stripe Price ID
+        ];
 
         $session = Session::create([
             'payment_method_types' => ['card'],
@@ -37,7 +39,8 @@ class StripePaymentController extends Controller
                 'price_data' => [
                     'currency' => 'usd',
                     'product_data' => [
-                        'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
+                        // 'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
+                        'name' => $prices[$request->plan_type],
                     ],
                     'unit_amount' => $amount,
                 ],
@@ -54,7 +57,7 @@ class StripePaymentController extends Controller
         ]);
     }
 
-   
+
 
     public function index(): JsonResponse
     {
@@ -91,8 +94,6 @@ class StripePaymentController extends Controller
             ]
         ]);
     }
-
-
 
     public function success(Request $request)
     {
@@ -161,8 +162,6 @@ class StripePaymentController extends Controller
         ], 404);
     }
 
-
-
     public function verifyPaymentAndCreateUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -225,8 +224,6 @@ class StripePaymentController extends Controller
         }
     }
 
-
-
     public function handleWebhook(Request $request): JsonResponse
     {
         $event = \Stripe\Event::constructFrom(
@@ -266,3 +263,4 @@ class StripePaymentController extends Controller
         return response()->json(['status' => 'success']);
     }
 }
+
