@@ -40,7 +40,7 @@ class StripePaymentController extends Controller
                     'currency' => 'usd',
                     'product_data' => [
                         // 'name' => $request->product_name,  // dynamic name: "withads" or "withoutads"
-                        'name' => $prices[$request->plan_type],
+                        'name' => $prices[$request->product_name],
                     ],
                     'unit_amount' => $amount,
                 ],
