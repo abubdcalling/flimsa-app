@@ -13,16 +13,18 @@ class Season extends Model
 
     protected $fillable = [
         'serie_id',
+        'season_number',
         'title',
+        'release_date',
     ];
-
-    public function episode()
-    {
-        return $this->hasMany(Episode::class);
-    }
 
     public function serie()
     {
-        return $this->belongsTo(Serie::class);
+        return $this->belongsTo(serie::class);
+    }
+
+    public function episodes()
+    {
+        return $this->hasMany(Episode::class);
     }
 }

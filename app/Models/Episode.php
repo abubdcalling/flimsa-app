@@ -10,21 +10,24 @@ class Episode extends Model
     use HasFactory;
 
     protected $fillable = [
-        'season_id',
         'serie_id',
-        'title',
+        'season_id',
+        'content_id',
         'episode_number',
-        'duration',
-        'release_date',
     ];
-
-    public function serie()
-    {
-        return $this->belongsTo(Serie::class);
-    }
 
     public function season()
     {
         return $this->belongsTo(Season::class);
+    }
+
+    public function content()
+    {
+        return $this->belongsTo(Content::class);
+    }
+
+    public function serie()
+    {
+        return $this->season->serie(); // shortcut via season
     }
 }

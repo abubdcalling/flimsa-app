@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-   Schema::create('series', function (Blueprint $table) {
+        Schema::create('series', function (Blueprint $table) {
             $table->id();
-            $table->string('title');          // series title
-            $table->text('description')->nullable();  // optional description
-            $table->date('release_date')->nullable(); // optional release date
+            $table->string('title');            // required
+            $table->text('description')->nullable(); // optional summary
+            $table->date('release_date')->nullable(); // optional start date
+            $table->string('author')->nullable();     // optional creator/author
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('series');

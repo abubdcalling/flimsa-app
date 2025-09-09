@@ -12,9 +12,22 @@ class Content extends Model
     use HasFactory;
 
     protected $fillable = [
-        'video1', 'title', 'description', 'publish',
-        'schedule', 'genre_id', 'image', 'view_count',
-        'profile_pic', 'director_name', 'duration','episode_id'
+        'video1',
+        'title',
+        'description',
+        'publish',
+        'schedule',
+        'genre_id',
+        'image',
+        'view_count',
+        'profile_pic',
+        'director_name',
+        'duration',
+           'type',  // only for episodes
+        // optional references
+        'series_id',       // belongs to which series
+        'season_id',       // belongs to which season
+        'episode_id',  // only for episodes
     ];
     protected $casts = [
         'video1' => 'array', // Decode JSON to array on retrieval
@@ -26,12 +39,12 @@ class Content extends Model
     }
 
     public function cover()
-{
-    return $this->hasOne(Cover::class);
-}
+    {
+        return $this->hasOne(Cover::class);
+    }
 
 
-    
+
 
     // public function genres(): BelongsTo
     // {
@@ -71,5 +84,10 @@ class Content extends Model
     public function genre()
     {
         return $this->belongsTo(Genre::class);
+    }
+
+    public function episode()
+    {
+        return $this->hasOne(Episode::class);
     }
 }

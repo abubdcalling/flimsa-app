@@ -10,18 +10,18 @@ class Serie extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title',  // name or title of the series
-        'description',  // brief description or summary
-        'release_date',  // optional, date when the series started
-        // add other relevant fields you want mass-assignable
+        'title',         // required
+        'description',   // optional summary
+        'release_date',  // optional start date
+        'author',        // optional creator/author
     ];
 
-    public function episode()
+    public function episodes()
     {
         return $this->hasMany(Episode::class);
     }
 
-    public function season()
+    public function seasons()
     {
         return $this->hasMany(Season::class);
     }

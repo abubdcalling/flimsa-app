@@ -19,8 +19,9 @@ return new class extends Migration {
             $table->longText('description');
             $table->enum('publish', ['public', 'private', 'schedule'])->default('private')->index();
             $table->dateTime('schedule')->nullable();  // Nullable because only used if 'schedule' publish type
-         $table->foreignId('genre_id')->nullable()->constrained('genres')->onDelete('cascade')->index();
+            $table->foreignId('genre_id')->nullable()->constrained('genres')->onDelete('cascade')->index();
             $table->string('image')->nullable();
+            $table->string('type')->default('movie');
             $table->timestamps();
         });
     }
