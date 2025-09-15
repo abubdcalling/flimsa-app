@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Season extends Model
+class Series extends Model
 {
     use HasFactory;
-    protected $fillable = ['series_id','season_number','title','release_date','status','slug'];
+    protected $fillable = ['title','description','release_date','status','slug'];
 
-    public function series(): BelongsTo {
-        return $this->belongsTo(Series::class);
+    public function seasons(): HasMany {
+        return $this->hasMany(Season::class);
     }
 
     public function episodes(): HasMany {

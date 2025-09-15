@@ -11,6 +11,8 @@ class Content extends Model
 {
     use HasFactory;
 
+    protected $table = 'contents';
+
     protected $fillable = [
         'video1',
         'title',
@@ -23,15 +25,23 @@ class Content extends Model
         'profile_pic',
         'director_name',
         'duration',
-           'type',  // only for episodes
-        // optional references
-        'series_id',       // belongs to which series
-        'season_id',       // belongs to which season
-        'episode_id',  // only for episodes
+        'type',  // only for episodes
+        // // optional references
+        // 'series_id',  // belongs to which series
+        // 'season_id',  // belongs to which season
+        // 'episode_id',  // only for episodes
     ];
+
     protected $casts = [
-        'video1' => 'array', // Decode JSON to array on retrieval
+        'video1' => 'array',  // Decode JSON to array on retrieval
+        'schedule' => 'datetime',
+        'view_count' => 'integer',
     ];
+
+    public function episode()
+    {
+        return $this->hasOne(Episode::class, 'content_id');
+    }
 
     public function subtitles()
     {
@@ -42,9 +52,6 @@ class Content extends Model
     {
         return $this->hasOne(Cover::class);
     }
-
-
-
 
     // public function genres(): BelongsTo
     // {
@@ -84,10 +91,5 @@ class Content extends Model
     public function genre()
     {
         return $this->belongsTo(Genre::class);
-    }
-
-    public function episode()
-    {
-        return $this->hasOne(Episode::class);
     }
 }

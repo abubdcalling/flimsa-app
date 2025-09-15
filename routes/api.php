@@ -4,7 +4,11 @@ use App\Http\Controllers\AdController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\EpisodeController;
 use App\Http\Controllers\GenreController;
+use App\Http\Controllers\PersonController;
+use App\Http\Controllers\SeasonController;
+use App\Http\Controllers\SeriesController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\StripePaymentController;
@@ -16,7 +20,6 @@ use App\Http\Controllers\WishListController;
 use App\Models\WishList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PersonController;
 
 /*
  * |--------------------------------------------------------------------------
@@ -50,7 +53,10 @@ Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api')
 Route::middleware('auth:api')->group(function () {
     Route::middleware(['role:admin'])->group(function () {
         // Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
-        
+
+        Route::apiResource('series', SeriesController::class)->only(['show', 'store', 'update', 'destroy']);
+        Route::apiResource('seasons', SeasonController::class)->only(['show', 'store', 'update', 'destroy']);
+        Route::apiResource('episodes', EpisodeController::class)->only(['show', 'store', 'update', 'destroy']);
 
         Route::post('subtitles/{contentId}', [SubtitleController::class, 'store']);
         Route::get('subtitles', [SubtitleController::class, 'index']);
@@ -75,9 +81,6 @@ Route::middleware('auth:api')->group(function () {
 
         Route::post('/cover', [CoverController::class, 'postOrUpdateCover']);
         Route::get('/cover', [CoverController::class, 'getCover']);  // optional
-
-
-
     });
 
     Route::middleware(['role:subscriber'])->group(function () {
@@ -108,7 +111,6 @@ Route::middleware('auth:api')->group(function () {
         Route::get('payment-status', [StripePaymentController::class, 'paymentStatus']);
 
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
-
     });
 
     Route::middleware(['role:admin,subscriber'])->group(function () {
@@ -134,11 +136,9 @@ Route::get('ads/{id}', [AdController::class, 'show']);
 
 // ---------------new edition start(06/08/2025)--------------
 
-
-
-        Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
-        Route::post('/success', [StripePaymentController::class, 'success']);
-        Route::get('cancel', [StripePaymentController::class, 'cancel']);
+Route::post('/checkout', [StripePaymentController::class, 'PaymentIntent']);
+Route::post('/success', [StripePaymentController::class, 'success']);
+Route::get('cancel', [StripePaymentController::class, 'cancel']);
 
 // ----------------new edition end(06/08/2025)--------------
 
@@ -146,3 +146,8 @@ Route::post('/verify-payment-and-create-user', [StripePaymentController::class, 
 Route::apiResource('people', PersonController::class);
 
 Route::get('getByContentId/{id}', [ContentController::class, 'getByContentId']);
+
+//
+Route::get('series', [SeriesController::class, 'index']);
+Route::get('seasons', [SeasonController::class, 'index']);
+Route::get('episodes', [EpisodeController::class, 'index']);
