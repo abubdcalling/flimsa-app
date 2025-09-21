@@ -774,6 +774,7 @@ class ContentController extends Controller
                 'image' => 'required|file|mimes:jpeg,png,jpg,gif,svg',
                 'profile_pic' => 'required|file|mimes:jpeg,png,jpg,gif,svg',
                 'duration' => 'nullable|string',  // Optional if using
+                'type'=>'nullable|string'
             ]);
 
             if ($validator->fails()) {
@@ -824,7 +825,8 @@ class ContentController extends Controller
                 'image' => $imageName,
                 'director_name' => $request->input('director_name'),
                 'profile_pic' => $profilePicUrl,
-                'duration' => $request->input('duration')
+                'duration' => $request->input('duration'),
+                'type' => $request->input('type', 'movie'), // default to 'movie' if not provided
             ]);
 
             return response()->json([
