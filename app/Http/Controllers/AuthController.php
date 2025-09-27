@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -45,6 +46,66 @@ class AuthController extends Controller
 
         return response()->json(['success' => true, 'message' => 'OTP sent to your email.']);
     }
+
+    protected function respondWithToken($token, $user = null)
+    {
+        return response()->json([
+            'success'      => true,
+            'message'      => 'Token issued.',
+            'token_type'   => 'bearer',
+            'access_token' => $token,
+            'expires_in'   => auth('api')->factory()->getTTL() * 60, // seconds
+            'user' => $user ? [
+                'id'        => $user->id,
+                'email'     => $user->email,
+                'role'      => $user->roles,
+                'plan_type' => $user->plan_type ?? null,
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Refresh using token from BODY only: { "refresh_token": "<jwt>" }
+     * Route MUST be outside auth:api.
+     */
+    public function refresh(Request $request)
+    {
+        $request->validate([
+            'refresh_token' => ['required','string'],
+        ]);
+
+        try {
+            $raw = $request->input('refresh_token');
+            if (stripos($raw, 'Bearer ') === 0) {
+                $raw = trim(substr($raw, 7));
+            }
+
+            // Rotate & blacklist provided token (if blacklist enabled)
+            $newToken = JWTAuth::setToken($raw)->refresh();
+
+            // Get the user using the *JWT* guard (or via JWTAuth facade)
+            $user = JWTAuth::setToken($newToken)->toUser();
+            // or: $user = auth('api')->setToken($newToken)->user();
+
+            return $this->respondWithToken($newToken, $user);
+
+        } catch (TokenBlacklistedException $e) {
+            return response()->json(['success' => false, 'message' => 'Token blacklisted.'], 401);
+        } catch (TokenExpiredException $e) {
+            return response()->json(['success' => false, 'message' => 'Refresh window expired.'], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json(['success' => false, 'message' => 'Token invalid.'], 401);
+        } catch (JWTException $e) {
+            return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed.'], 400);
+        } catch (Exception $e) {
+            Log::error('Refresh error ['.get_class($e).']: '.$e->getMessage());
+            if (!app()->environment('production')) {
+                return response()->json(['success'=>false,'message'=>'Failed to refresh token.','error'=>get_class($e).': '.$e->getMessage()], 500);
+            }
+            return response()->json(['success'=>false,'message'=>'Failed to refresh token.'], 500);
+        }
+    }
+
 
     public function verifyResetOTP(Request $request)
     {
@@ -100,7 +161,7 @@ class AuthController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6|same:confirm_password',
                 'confirm_password' => 'required|string|min:6',
-                'gender' => 'required|in:male,female,others', 
+                'gender' => 'required|in:male,female,others',
             ]);
 
             if ($validator->fails()) {
@@ -127,7 +188,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'first_name' => $user->first_name,
                     'email' => $user->email,
-                     'gender' => $user->gender,
+                    'gender' => $user->gender,
                     // 'roles' => $user->role, // Assuming you have a 'role' field in your User model
                 ]
             ], 201);
@@ -179,20 +240,22 @@ class AuthController extends Controller
             }
 
             // Proper refresh with token set
-            // $refreshToken = JWTAuth::setToken($token)->refresh();
+            $refreshToken = JWTAuth::setToken($token)->refresh();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful.',
                 'token' => $token,
-                'refresh_token' => '',
+                'refresh_token' => $refreshToken,
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
                     'role' => $user->roles,
-                    'plan_type' => $user->plan_type ?? null, // Assuming plan_type is a field in your User model
+                    'plan_type' => $user->plan_type ?? null,  // Assuming plan_type is a field in your User model
                 ],
             ]);
+
+            // return $this->respondWithToken($refreshToken, $user);
         } catch (Exception $e) {
             Log::error('Login error: ' . $e->getMessage());
 

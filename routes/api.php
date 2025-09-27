@@ -50,7 +50,12 @@ Route::get('genres', [GenreController::class, 'index']);
 Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
 
+Route::post('refresh', [AuthController::class, 'refresh']);
+
 Route::middleware('auth:api')->group(function () {
+
+    
+
     Route::middleware(['role:admin'])->group(function () {
         // Route::get('contents/{id}', [ContentController::class, 'show']); //for movie related content
 
