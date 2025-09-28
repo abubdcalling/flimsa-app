@@ -47,64 +47,140 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'OTP sent to your email.']);
     }
 
-    protected function respondWithToken($token, $user = null)
-    {
-        return response()->json([
-            'success'      => true,
-            'message'      => 'Token issued.',
-            'token_type'   => 'bearer',
-            'access_token' => $token,
-            'expires_in'   => auth('api')->factory()->getTTL() * 60, // seconds
-            'user' => $user ? [
-                'id'        => $user->id,
-                'email'     => $user->email,
-                'role'      => $user->roles,
-                'plan_type' => $user->plan_type ?? null,
-            ] : null,
-        ]);
+    // protected function respondWithToken($token, $user = null)
+    // {
+    //     return response()->json([
+    //         'success'      => true,
+    //         'message'      => 'Token issued.',
+    //         'token_type'   => 'bearer',
+    //         'access_token' => $token,
+    //         'expires_in'   => auth('api')->factory()->getTTL() * 60, // seconds
+    //         'refresh_token'=>(int) config('jwt.refresh_ttl')*60,
+    //         'refresh_expires_in' =>  (int) config('jwt.refresh_ttl')* 60,
+    //         'user' => $user ? [
+    //             'id'        => $user->id,
+    //             'email'     => $user->email,
+    //             'role'      => $user->roles,
+    //             'plan_type' => $user->plan_type ?? null,
+    //         ] : null,
+    //     ]);
+    // }
+
+    // /**
+    //  * Refresh using token from BODY only: { "refresh_token": "<jwt>" }
+    //  * Route MUST be outside auth:api.
+    //  */
+    // public function refresh(Request $request)
+    // {
+    //     $request->validate([
+    //         'refresh_token' => ['required','string'],
+    //     ]);
+
+    //     try {
+    //         $raw = $request->input('refresh_token');
+    //         if (stripos($raw, 'Bearer ') === 0) {
+    //             $raw = trim(substr($raw, 7));
+    //         }
+
+    //         // Rotate & blacklist provided token (if blacklist enabled)
+    //         $newToken = JWTAuth::setToken($raw)->refresh();
+
+    //         // Get the user using the *JWT* guard (or via JWTAuth facade)
+    //         $user = JWTAuth::setToken($newToken)->toUser();
+    //         // or: $user = auth('api')->setToken($newToken)->user();
+
+    //         return $this->respondWithToken($newToken, $user);
+
+    //     } catch (TokenBlacklistedException $e) {
+    //         return response()->json(['success' => false, 'message' => 'Token blacklisted.'], 401);
+    //     } catch (TokenExpiredException $e) {
+    //         return response()->json(['success' => false, 'message' => 'Refresh window expired.'], 401);
+    //     } catch (TokenInvalidException $e) {
+    //         return response()->json(['success' => false, 'message' => 'Token invalid.'], 401);
+    //     } catch (JWTException $e) {
+    //         return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed.'], 400);
+    //     } catch (Exception $e) {
+    //         Log::error('Refresh error ['.get_class($e).']: '.$e->getMessage());
+    //         if (!app()->environment('production')) {
+    //             return response()->json(['success'=>false,'message'=>'Failed to refresh token.','error'=>get_class($e).': '.$e->getMessage()], 500);
+    //         }
+    //         return response()->json(['success'=>false,'message'=>'Failed to refresh token.'], 500);
+    //     }
+    // }
+
+
+protected function respondWithToken($token, $user = null, $refreshToken = null)
+{
+    $accessTtl  = (int) config('jwt.ttl');          // minutes
+    $refreshTtl = (int) config('jwt.refresh_ttl');  // minutes
+
+    // If no refresh token was passed in, mint one (when we have a user)
+    if ($refreshToken === null && $user) {
+        $refreshToken = auth('api')
+            ->claims(['typ' => 'refresh'])
+            ->setTTL($refreshTtl)
+            ->fromUser($user);
+
+        // reset guard TTL so later calls don't inherit the refresh TTL
+        auth('api')->setTTL($accessTtl);
     }
 
-    /**
-     * Refresh using token from BODY only: { "refresh_token": "<jwt>" }
-     * Route MUST be outside auth:api.
-     */
+    return response()->json([
+        'success'             => true,
+        'message'             => 'Token issued.',
+        'token_type'          => 'bearer',
+        'access_token'        => $token,
+        'expires_in'          => $accessTtl * 60,          // seconds
+        'refresh_token'       => $refreshToken,            // <-- actual JWT string
+        'refresh_expires_in'  => $refreshTtl * 60,         // seconds
+        'user' => $user ? [
+            'id'        => $user->id,
+            'email'     => $user->email,
+            'role'      => $user->roles,
+            'plan_type' => $user->plan_type ?? null,
+        ] : null,
+    ]);
+}
+
+
+
     public function refresh(Request $request)
-    {
-        $request->validate([
-            'refresh_token' => ['required','string'],
-        ]);
+{
+    $request->validate([
+        'refresh_token' => ['required','string'],
+    ]);
 
-        try {
-            $raw = $request->input('refresh_token');
-            if (stripos($raw, 'Bearer ') === 0) {
-                $raw = trim(substr($raw, 7));
-            }
-
-            // Rotate & blacklist provided token (if blacklist enabled)
-            $newToken = JWTAuth::setToken($raw)->refresh();
-
-            // Get the user using the *JWT* guard (or via JWTAuth facade)
-            $user = JWTAuth::setToken($newToken)->toUser();
-            // or: $user = auth('api')->setToken($newToken)->user();
-
-            return $this->respondWithToken($newToken, $user);
-
-        } catch (TokenBlacklistedException $e) {
-            return response()->json(['success' => false, 'message' => 'Token blacklisted.'], 401);
-        } catch (TokenExpiredException $e) {
-            return response()->json(['success' => false, 'message' => 'Refresh window expired.'], 401);
-        } catch (TokenInvalidException $e) {
-            return response()->json(['success' => false, 'message' => 'Token invalid.'], 401);
-        } catch (JWTException $e) {
-            return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed.'], 400);
-        } catch (Exception $e) {
-            Log::error('Refresh error ['.get_class($e).']: '.$e->getMessage());
-            if (!app()->environment('production')) {
-                return response()->json(['success'=>false,'message'=>'Failed to refresh token.','error'=>get_class($e).': '.$e->getMessage()], 500);
-            }
-            return response()->json(['success'=>false,'message'=>'Failed to refresh token.'], 500);
+    try {
+        $raw = $request->input('refresh_token');
+        if (stripos($raw, 'Bearer ') === 0) {
+            $raw = trim(substr($raw, 7));
         }
+
+        // Rotate & blacklist provided token (if blacklist enabled)
+        $newToken = \Tymon\JWTAuth\Facades\JWTAuth::setToken($raw)->refresh();
+
+        // Get the user using the *JWT* guard (or via JWTAuth facade)
+        $user = \Tymon\JWTAuth\Facades\JWTAuth::setToken($newToken)->toUser();
+
+        // respondWithToken will also generate and return a new refresh_token
+        return $this->respondWithToken($newToken, $user);
+
+    } catch (\Tymon\JWTAuth\Exceptions\TokenBlacklistedException $e) {
+        return response()->json(['success' => false, 'message' => 'Token blacklisted.'], 401);
+    } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+        return response()->json(['success' => false, 'message' => 'Refresh window expired.'], 401);
+    } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+        return response()->json(['success' => false, 'message' => 'Token invalid.'], 401);
+    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+        return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed.'], 400);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Refresh error ['.get_class($e).']: '.$e->getMessage());
+        if (!app()->environment('production')) {
+            return response()->json(['success'=>false,'message'=>'Failed to refresh token.','error'=>get_class($e).': '.$e->getMessage()], 500);
+        }
+        return response()->json(['success'=>false,'message'=>'Failed to refresh token.'], 500);
     }
+}
 
 
     public function verifyResetOTP(Request $request)
