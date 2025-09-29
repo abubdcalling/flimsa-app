@@ -144,41 +144,79 @@ protected function respondWithToken($token, $user = null, $refreshToken = null)
 
 
 
+//     public function refresh(Request $request)
+// {
+//     $request->validate([
+//         'refresh_token' => ['required','string'],
+//     ]);
+
+//     try {
+//         $raw = $request->input('refresh_token');
+//         if (stripos($raw, 'Bearer ') === 0) {
+//             $raw = trim(substr($raw, 7));
+//         }
+
+//         // Rotate & blacklist provided token (if blacklist enabled)
+//         $newToken = \Tymon\JWTAuth\Facades\JWTAuth::setToken($raw)->refresh();
+
+//         // Get the user using the *JWT* guard (or via JWTAuth facade)
+//         $user = \Tymon\JWTAuth\Facades\JWTAuth::setToken($newToken)->toUser();
+
+//         // respondWithToken will also generate and return a new refresh_token
+//         return $this->respondWithToken($newToken, $user);
+
+//     } catch (\Tymon\JWTAuth\Exceptions\TokenBlacklistedException $e) {
+//         return response()->json(['success' => false, 'message' => 'Token blacklisted.'], 401);
+//     } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+//         return response()->json(['success' => false, 'message' => 'Refresh window expired.'], 401);
+//     } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+//         return response()->json(['success' => false, 'message' => 'Token invalid.'], 401);
+//     } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+//         return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed.'], 400);
+//     } catch (\Exception $e) {
+//         \Illuminate\Support\Facades\Log::error('Refresh error ['.get_class($e).']: '.$e->getMessage());
+//         if (!app()->environment('production')) {
+//             return response()->json(['success'=>false,'message'=>'Failed to refresh token.','error'=>get_class($e).': '.$e->getMessage()], 500);
+//         }
+//         return response()->json(['success'=>false,'message'=>'Failed to refresh token.'], 500);
+//     }
+// }
+
+
     public function refresh(Request $request)
 {
-    $request->validate([
-        'refresh_token' => ['required','string'],
-    ]);
+    $request->validate(['refresh_token' => ['required','string']]);
+
+    $raw = $request->input('refresh_token');
+    if (stripos($raw, 'Bearer ') === 0) {
+        $raw = trim(substr($raw, 7));
+    }
 
     try {
-        $raw = $request->input('refresh_token');
-        if (stripos($raw, 'Bearer ') === 0) {
-            $raw = trim(substr($raw, 7));
+        // Parse & validate refresh token
+        $payload = JWTAuth::setToken($raw)->getPayload();
+
+        // Enforce refresh token type
+        if (($payload['typ'] ?? null) !== 'refresh') {
+            return response()->json(['success' => false, 'message' => 'Not a refresh token'], 400);
         }
 
-        // Rotate & blacklist provided token (if blacklist enabled)
-        $newToken = \Tymon\JWTAuth\Facades\JWTAuth::setToken($raw)->refresh();
+        // Optionally blacklist the old refresh token (requires blacklist enabled)
+        try { JWTAuth::invalidate(new \Tymon\JWTAuth\Token($raw)); } catch (\Exception $e) {}
 
-        // Get the user using the *JWT* guard (or via JWTAuth facade)
-        $user = \Tymon\JWTAuth\Facades\JWTAuth::setToken($newToken)->toUser();
+        // Mint new access token & new refresh token
+        $uid   = $payload['sub'];
+        $user  = User::findOrFail($uid);
+        $access = auth('api')->fromUser($user); // uses access ttl
 
-        // respondWithToken will also generate and return a new refresh_token
-        return $this->respondWithToken($newToken, $user);
+        return $this->respondWithToken($access, $user); // will mint a new refresh token too
 
-    } catch (\Tymon\JWTAuth\Exceptions\TokenBlacklistedException $e) {
-        return response()->json(['success' => false, 'message' => 'Token blacklisted.'], 401);
-    } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-        return response()->json(['success' => false, 'message' => 'Refresh window expired.'], 401);
-    } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-        return response()->json(['success' => false, 'message' => 'Token invalid.'], 401);
-    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
-        return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed.'], 400);
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Refresh error ['.get_class($e).']: '.$e->getMessage());
-        if (!app()->environment('production')) {
-            return response()->json(['success'=>false,'message'=>'Failed to refresh token.','error'=>get_class($e).': '.$e->getMessage()], 500);
-        }
-        return response()->json(['success'=>false,'message'=>'Failed to refresh token.'], 500);
+    } catch (TokenExpiredException $e) {
+        return response()->json(['success' => false, 'message' => 'Refresh token expired'], 401);
+    } catch (TokenInvalidException $e) {
+        return response()->json(['success' => false, 'message' => 'Refresh token invalid'], 401);
+    } catch (JWTException $e) {
+        return response()->json(['success' => false, 'message' => 'Token missing or cannot be parsed'], 400);
     }
 }
 
@@ -279,70 +317,94 @@ protected function respondWithToken($token, $user = null, $refreshToken = null)
         }
     }
 
-    public function login(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
-                'password' => 'required|string',
-            ]);
+    // public function login(Request $request)
+    // {
+    //     try {
+    //         $validator = Validator::make($request->all(), [
+    //             'email' => 'required|email',
+    //             'password' => 'required|string',
+    //         ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed.',
-                    'errors' => $validator->errors(),
-                ], 400);
-            }
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Validation failed.',
+    //                 'errors' => $validator->errors(),
+    //             ], 400);
+    //         }
 
-            $credentials = $request->only('email', 'password');
+    //         $credentials = $request->only('email', 'password');
 
-            if (!$token = JWTAuth::attempt($credentials)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. Invalid credentials.',
-                ], 401);
-            }
+    //         if (!$token = JWTAuth::attempt($credentials)) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Unauthorized. Invalid credentials.',
+    //             ], 401);
+    //         }
 
-            $user = JWTAuth::user();
+    //         $user = JWTAuth::user();
 
-            $allowedRoles = ['admin', 'subscriber'];
-            if (!in_array($user->roles, $allowedRoles)) {
-                JWTAuth::invalidate($token);  // Optional: Invalidate token if role is not allowed
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. Role not allowed.',
-                ], 403);
-            }
+    //         $allowedRoles = ['admin', 'subscriber'];
+    //         if (!in_array($user->roles, $allowedRoles)) {
+    //             JWTAuth::invalidate($token);  // Optional: Invalidate token if role is not allowed
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Unauthorized. Role not allowed.',
+    //             ], 403);
+    //         }
 
-            // Proper refresh with token set
-            $refreshToken = JWTAuth::setToken($token)->refresh();
+    //         // Proper refresh with token set
+    //         $refreshToken = JWTAuth::setToken($token)->refresh();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Login successful.',
-                'token' => $token,
-                'refresh_token' => $refreshToken,
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'role' => $user->roles,
-                    'plan_type' => $user->plan_type ?? null,  // Assuming plan_type is a field in your User model
-                ],
-            ]);
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Login successful.',
+    //             'token' => $token,
+    //             'refresh_token' => $refreshToken,
+    //             'user' => [
+    //                 'id' => $user->id,
+    //                 'email' => $user->email,
+    //                 'role' => $user->roles,
+    //                 'plan_type' => $user->plan_type ?? null,  // Assuming plan_type is a field in your User model
+    //             ],
+    //         ]);
 
-            // return $this->respondWithToken($refreshToken, $user);
-        } catch (Exception $e) {
-            Log::error('Login error: ' . $e->getMessage());
+    //         // return $this->respondWithToken($refreshToken, $user);
+    //     } catch (Exception $e) {
+    //         Log::error('Login error: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Login failed.',
-                'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage(),
-            ], 500);
-        }
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Login failed.',
+    //             'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+  
+  public function login(Request $request)
+{
+    $data = $request->validate([
+        'email'    => 'required|email',
+        'password' => 'required|string',
+    ]);
+
+    if (! $access = auth('api')->attempt($data)) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
+    $user = auth('api')->user();
+
+    // roles check...
+    if (! in_array($user->roles, ['admin','subscriber'])) {
+        auth('api')->logout(); // invalidate access token
+        return response()->json(['success' => false, 'message' => 'Role not allowed'], 403);
+    }
+
+    return $this->respondWithToken($access, $user); // this will also mint refresh
+}
+
+  
     public function logout()
     {
         try {
