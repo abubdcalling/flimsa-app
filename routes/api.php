@@ -52,7 +52,7 @@ Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api')
 
 Route::post('refresh', [AuthController::class, 'refresh']);
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('auth:api,reject.refresh')->group(function () {
 
     
 
