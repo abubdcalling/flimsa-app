@@ -49,6 +49,7 @@ class SeriesController extends Controller
 
             $series = Series::withCount(['seasons', 'episodes'])
                 ->paginate($perPage)  // honors ?page=
+                ->latest() 
                 ->appends($request->query());  // keeps params in next/prev links
 
             return response()->json([
