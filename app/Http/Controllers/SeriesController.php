@@ -9,25 +9,7 @@ use Illuminate\Support\Str;
 
 class SeriesController extends Controller
 {
-    // public function index()
-    // {
-    //     try {
-    //         $series = Series::withCount(['seasons', 'episodes'])->paginate();
 
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Series list fetched successfully.',
-    //             'data'    => $series
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         Log::error('Error fetching series list: ' . $e->getMessage());
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Something went wrong while fetching the series list.'
-    //         ], 500);
-    //     }
-    // }
 
    
 
@@ -48,6 +30,7 @@ class SeriesController extends Controller
             }
 
             $series = Series::withCount(['seasons', 'episodes'])
+            ->latest()   
                 ->paginate($perPage)  // honors ?page=
                 
                 ->appends($request->query());  // keeps params in next/prev links
