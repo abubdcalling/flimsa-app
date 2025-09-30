@@ -29,7 +29,7 @@ class SeriesController extends Controller
     //     }
     // }
 
-    use Illuminate\Http\Request;
+   
 
     public function index(Request $request)
     {
