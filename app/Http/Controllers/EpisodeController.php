@@ -21,128 +21,256 @@ use Illuminate\Validation\Rule;
 class EpisodeController extends Controller
 {
 
-
-
-
-
     public function index(Request $request)
-    {
-        // 1) Validate query params
-        $v = Validator::make($request->all(), [
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'series_id' => ['nullable', 'integer', 'exists:series,id'],
-            'season_id' => ['nullable', 'integer', 'exists:seasons,id'],
-            'status' => ['nullable', 'in:draft,scheduled,published,archived'],
-            'publish' => ['nullable', 'in:public,private,schedule'],  // Content.publish
-            'search' => ['nullable', 'string', 'max:255'],  // title/slug/synopsis, content.title/description
-            // Optional schedule window (filters content.schedule)
-            'scheduled_from' => ['nullable', 'date'],
-            'scheduled_to' => ['nullable', 'date'],
-            // Sorting (episode columns only to avoid joins)
-            'order_by' => ['nullable', 'in:created_at,updated_at,release_date,episode_number,title'],
-            'order_dir' => ['nullable', 'in:asc,desc'],
-        ]);
+{
+    // 1) Validate query params
+    $v = Validator::make($request->all(), [
+        'page' => ['nullable', 'integer', 'min:1'],
 
-        if ($v->fails()) {
+        // allow either an integer (1..100) or the literal string "all"
+        'per_page' => ['nullable', 'regex:/^(all|[1-9]\d{0,2})$/'],
+
+        'series_id' => ['nullable', 'integer', 'exists:series,id'],
+        'season_id' => ['nullable', 'integer', 'exists:seasons,id'],
+        'status' => ['nullable', 'in:draft,scheduled,published,archived'],
+        'publish' => ['nullable', 'in:public,private,schedule'],  // Content.publish
+        'search' => ['nullable', 'string', 'max:255'],            // title/slug/synopsis, content.title/description
+        // Optional schedule window (filters content.schedule)
+        'scheduled_from' => ['nullable', 'date'],
+        'scheduled_to' => ['nullable', 'date'],
+        // Sorting (episode columns only to avoid joins)
+        'order_by' => ['nullable', 'in:created_at,updated_at,release_date,episode_number,title'],
+        'order_dir' => ['nullable', 'in:asc,desc'],
+    ]);
+
+    if ($v->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed.',
+            'errors' => $v->errors(),
+        ], \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    $data = $v->validated();
+
+    // 2) If both series_id and season_id provided, ensure season belongs to series
+    if (!empty($data['series_id']) && !empty($data['season_id'])) {
+        $season = Season::find($data['season_id']);
+        if ($season && (int) $season->series_id !== (int) $data['series_id']) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed.',
-                'errors' => $v->errors(),
+                'message' => 'Selected season does not belong to the given series.',
             ], \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+    }
 
-        $data = $v->validated();
+    // 3) Build query (+ eager load)
+    $q = Episode::query()->with(['season', 'series', 'content']);
 
-        // 2) If both series_id and season_id provided, ensure season belongs to series
-        if (!empty($data['series_id']) && !empty($data['season_id'])) {
-            $season = Season::find($data['season_id']);
-            if ($season && (int) $season->series_id !== (int) $data['series_id']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selected season does not belong to the given series.',
-                ], \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
+    // Filters
+    if (!empty($data['series_id'])) {
+        $q->where('series_id', (int) $data['series_id']);
+    }
+    if (!empty($data['season_id'])) {
+        $q->where('season_id', (int) $data['season_id']);
+    }
+    if (!empty($data['status'])) {
+        $q->where('status', $data['status']);
+    }
+    if (!empty($data['publish'])) {
+        $q->whereHas('content', fn($c) => $c->where('publish', $data['publish']));
+    }
+
+    // Scheduled window (on related content.schedule)
+    if (!empty($data['scheduled_from']) || !empty($data['scheduled_to'])) {
+        $from = $data['scheduled_from'] ?? null;
+        $to = $data['scheduled_to'] ?? null;
+
+        $q->whereHas('content', function ($c) use ($from, $to) {
+            if ($from) {
+                $c->where('schedule', '>=', $from);
             }
-        }
-
-        // 3) Build query (+ eager load)
-        $q = Episode::query()
-            ->with(['season', 'series', 'content']);
-
-        // Filters
-        if (!empty($data['series_id'])) {
-            $q->where('series_id', (int) $data['series_id']);
-        }
-        if (!empty($data['season_id'])) {
-            $q->where('season_id', (int) $data['season_id']);
-        }
-        if (!empty($data['status'])) {
-            $q->where('status', $data['status']);
-        }
-        if (!empty($data['publish'])) {
-            $q->whereHas('content', fn($c) => $c->where('publish', $data['publish']));
-        }
-
-        // Scheduled window (on related content.schedule)
-        if (!empty($data['scheduled_from']) || !empty($data['scheduled_to'])) {
-            $from = $data['scheduled_from'] ?? null;
-            $to = $data['scheduled_to'] ?? null;
-
-            $q->whereHas('content', function ($c) use ($from, $to) {
-                if ($from) {
-                    $c->where('schedule', '>=', $from);
-                }
-                if ($to) {
-                    $c->where('schedule', '<=', $to);
-                }
-            });
-        }
-
-        // Search (episode + content fields)
-        if (!empty($data['search'])) {
-            $term = trim($data['search']);
-            $q->where(function ($qq) use ($term) {
-                $qq
-                    ->where('title', 'like', "%{$term}%")
-                    ->orWhere('slug', 'like', "%{$term}%")
-                    ->orWhere('synopsis', 'like', "%{$term}%")
-                    ->orWhereHas('content', function ($c) use ($term) {
-                        $c
-                            ->where('title', 'like', "%{$term}%")
-                            ->orWhere('description', 'like', "%{$term}%");
-                    });
-            });
-        }
-
-        // Sorting
-        $orderBy = $data['order_by'] ?? 'created_at';
-        $orderDir = $data['order_dir'] ?? 'desc';
-        $q->orderBy($orderBy, $orderDir);
-
-        // Pagination
-        $perPage = (int) ($data['per_page'] ?? 15);
-        $episodes = $q->paginate($perPage)->appends($request->query());
-
-        // 4) Hide schedule unless actually scheduled
-        $episodes->getCollection()->each(function ($ep) {
-            if ($ep->relationLoaded('content') && $ep->content && $ep->content->publish !== 'schedule') {
-                $ep->content->makeHidden(['schedule']);
+            if ($to) {
+                $c->where('schedule', '<=', $to);
             }
         });
-
-        // 5) Response
-        return response()->json([
-            'success' => true,
-            'message' => 'Episodes list.',
-            'data' => $episodes->items(),  // models will serialize with loaded relations
-            'meta' => [
-                'current_page' => $episodes->currentPage(),
-                'per_page' => $episodes->perPage(),
-                'last_page' => $episodes->lastPage(),
-                'total' => $episodes->total(),
-            ],
-        ], \Illuminate\Http\Response::HTTP_OK);
     }
+
+    // Search (episode + content fields)
+    if (!empty($data['search'])) {
+        $term = trim($data['search']);
+        $q->where(function ($qq) use ($term) {
+            $qq->where('title', 'like', "%{$term}%")
+               ->orWhere('slug', 'like', "%{$term}%")
+               ->orWhere('synopsis', 'like', "%{$term}%")
+               ->orWhereHas('content', function ($c) use ($term) {
+                   $c->where('title', 'like', "%{$term}%")
+                     ->orWhere('description', 'like', "%{$term}%");
+               });
+        });
+    }
+
+    // Sorting (defaults already give "latest" by created_at desc)
+    $orderBy = $data['order_by'] ?? 'created_at';
+    $orderDir = $data['order_dir'] ?? 'desc';
+    $q->orderBy($orderBy, $orderDir);
+
+    // Pagination (Series-style per_page handling; preserves your response)
+    $perPageRaw = $request->query('per_page', 15);
+    if (is_numeric($perPageRaw)) {
+        $perPage = max(1, min((int) $perPageRaw, 100));
+    } elseif (is_string($perPageRaw) && strtolower($perPageRaw) === 'all') {
+        $perPage = max(1, Episode::count()); // single page with all items
+    } else {
+        $perPage = 15;
+    }
+
+    $episodes = $q->paginate($perPage)->appends($request->query());
+
+    // 4) Hide schedule unless actually scheduled
+    $episodes->getCollection()->each(function ($ep) {
+        if ($ep->relationLoaded('content') && $ep->content && $ep->content->publish !== 'schedule') {
+            $ep->content->makeHidden(['schedule']);
+        }
+    });
+
+    // 5) Response (unchanged)
+    return response()->json([
+        'success' => true,
+        'message' => 'Episodes list.',
+        'data' => $episodes->items(),
+        'meta' => [
+            'current_page' => $episodes->currentPage(),
+            'per_page' => $episodes->perPage(),
+            'last_page' => $episodes->lastPage(),
+            'total' => $episodes->total(),
+        ],
+    ], \Illuminate\Http\Response::HTTP_OK);
+}
+
+
+
+
+
+
+    // public function index(Request $request)
+    // {
+    //     // 1) Validate query params
+    //     $v = Validator::make($request->all(), [
+    //         'page' => ['nullable', 'integer', 'min:1'],
+    //         'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+    //         'series_id' => ['nullable', 'integer', 'exists:series,id'],
+    //         'season_id' => ['nullable', 'integer', 'exists:seasons,id'],
+    //         'status' => ['nullable', 'in:draft,scheduled,published,archived'],
+    //         'publish' => ['nullable', 'in:public,private,schedule'],  // Content.publish
+    //         'search' => ['nullable', 'string', 'max:255'],  // title/slug/synopsis, content.title/description
+    //         // Optional schedule window (filters content.schedule)
+    //         'scheduled_from' => ['nullable', 'date'],
+    //         'scheduled_to' => ['nullable', 'date'],
+    //         // Sorting (episode columns only to avoid joins)
+    //         'order_by' => ['nullable', 'in:created_at,updated_at,release_date,episode_number,title'],
+    //         'order_dir' => ['nullable', 'in:asc,desc'],
+    //     ]);
+
+    //     if ($v->fails()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validation failed.',
+    //             'errors' => $v->errors(),
+    //         ], \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
+    //     }
+
+    //     $data = $v->validated();
+
+    //     // 2) If both series_id and season_id provided, ensure season belongs to series
+    //     if (!empty($data['series_id']) && !empty($data['season_id'])) {
+    //         $season = Season::find($data['season_id']);
+    //         if ($season && (int) $season->series_id !== (int) $data['series_id']) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Selected season does not belong to the given series.',
+    //             ], \Illuminate\Http\Response::HTTP_UNPROCESSABLE_ENTITY);
+    //         }
+    //     }
+
+    //     // 3) Build query (+ eager load)
+    //     $q = Episode::query()
+    //         ->with(['season', 'series', 'content']);
+
+    //     // Filters
+    //     if (!empty($data['series_id'])) {
+    //         $q->where('series_id', (int) $data['series_id']);
+    //     }
+    //     if (!empty($data['season_id'])) {
+    //         $q->where('season_id', (int) $data['season_id']);
+    //     }
+    //     if (!empty($data['status'])) {
+    //         $q->where('status', $data['status']);
+    //     }
+    //     if (!empty($data['publish'])) {
+    //         $q->whereHas('content', fn($c) => $c->where('publish', $data['publish']));
+    //     }
+
+    //     // Scheduled window (on related content.schedule)
+    //     if (!empty($data['scheduled_from']) || !empty($data['scheduled_to'])) {
+    //         $from = $data['scheduled_from'] ?? null;
+    //         $to = $data['scheduled_to'] ?? null;
+
+    //         $q->whereHas('content', function ($c) use ($from, $to) {
+    //             if ($from) {
+    //                 $c->where('schedule', '>=', $from);
+    //             }
+    //             if ($to) {
+    //                 $c->where('schedule', '<=', $to);
+    //             }
+    //         });
+    //     }
+
+    //     // Search (episode + content fields)
+    //     if (!empty($data['search'])) {
+    //         $term = trim($data['search']);
+    //         $q->where(function ($qq) use ($term) {
+    //             $qq
+    //                 ->where('title', 'like', "%{$term}%")
+    //                 ->orWhere('slug', 'like', "%{$term}%")
+    //                 ->orWhere('synopsis', 'like', "%{$term}%")
+    //                 ->orWhereHas('content', function ($c) use ($term) {
+    //                     $c
+    //                         ->where('title', 'like', "%{$term}%")
+    //                         ->orWhere('description', 'like', "%{$term}%");
+    //                 });
+    //         });
+    //     }
+
+    //     // Sorting
+    //     $orderBy = $data['order_by'] ?? 'created_at';
+    //     $orderDir = $data['order_dir'] ?? 'desc';
+    //     $q->orderBy($orderBy, $orderDir);
+
+    //     // Pagination
+    //     $perPage = (int) ($data['per_page'] ?? 15);
+    //     $episodes = $q->paginate($perPage)->appends($request->query());
+
+    //     // 4) Hide schedule unless actually scheduled
+    //     $episodes->getCollection()->each(function ($ep) {
+    //         if ($ep->relationLoaded('content') && $ep->content && $ep->content->publish !== 'schedule') {
+    //             $ep->content->makeHidden(['schedule']);
+    //         }
+    //     });
+
+    //     // 5) Response
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Episodes list.',
+    //         'data' => $episodes->items(),  // models will serialize with loaded relations
+    //         'meta' => [
+    //             'current_page' => $episodes->currentPage(),
+    //             'per_page' => $episodes->perPage(),
+    //             'last_page' => $episodes->lastPage(),
+    //             'total' => $episodes->total(),
+    //         ],
+    //     ], \Illuminate\Http\Response::HTTP_OK);
+    // }
 
     public function show(Request $request, Episode $episode)
     {
