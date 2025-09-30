@@ -9,22 +9,59 @@ use Illuminate\Support\Str;
 
 class SeriesController extends Controller
 {
-    public function index()
+    // public function index()
+    // {
+    //     try {
+    //         $series = Series::withCount(['seasons', 'episodes'])->paginate();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Series list fetched successfully.',
+    //             'data'    => $series
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error fetching series list: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Something went wrong while fetching the series list.'
+    //         ], 500);
+    //     }
+    // }
+
+    use Illuminate\Http\Request;
+
+    public function index(Request $request)
     {
         try {
-            $series = Series::withCount(['seasons', 'episodes'])->paginate();
+            $perPageParam = $request->query('per_page', 15);
+
+            // Decide per-page size
+            if (is_numeric($perPageParam)) {
+                // guardrail: cap at e.g. 100
+                $perPage = max(1, min((int) $perPageParam, 100));
+            } elseif (is_string($perPageParam) && strtolower($perPageParam) === 'all') {
+                // put all results on a single page (still returns paginator shape)
+                $perPage = Series::count();
+            } else {
+                $perPage = 15;
+            }
+
+            $series = Series::withCount(['seasons', 'episodes'])
+                ->paginate($perPage)  // honors ?page=
+                ->appends($request->query());  // keeps params in next/prev links
 
             return response()->json([
                 'success' => true,
                 'message' => 'Series list fetched successfully.',
-                'data'    => $series
+                'data' => $series,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error fetching series list: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Error fetching series list: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong while fetching the series list.'
+                'message' => 'Something went wrong while fetching the series list.',
             ], 500);
         }
     }
@@ -115,17 +152,16 @@ class SeriesController extends Controller
 
             $series->update($data);
 
-            
             return response()->json([
                 'success' => true,
                 'message' => 'Series updated successfully.',
-                'data'    => $series
+                'data' => $series
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed.',
-                'errors'  => $e->errors()
+                'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error updating series: ' . $e->getMessage());
