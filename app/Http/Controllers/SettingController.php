@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Exception;
 
 class SettingController extends Controller
@@ -181,17 +183,24 @@ class SettingController extends Controller
 
     //         if ($request->hasFile('profile_pic')) {
     //             $file = $request->file('profile_pic');
-    //             $imageName = time() . '_profile.' . $file->getClientOriginalExtension();
-    //             $destinationPath = public_path('uploads/profiles');
+    //             $path = $file->store('profile_pics', 's3');
 
-    //             // Delete old profile pic if it exists
-    //             if ($user->profile_pic && file_exists(public_path($user->profile_pic))) {
-    //                 unlink(public_path($user->profile_pic));
+    //             if (!$path) {
+    //                 throw new Exception('Failed to upload profile picture to S3.');
     //             }
 
-    //             // Move and save the new file
-    //             $file->move($destinationPath, $imageName);
-    //             $user->profile_pic = 'uploads/profiles/' . $imageName;
+    //             // Make it publicly accessible
+    //             Storage::disk('s3')->setVisibility($path, 'public');
+
+    //             // Delete old image if it was stored on S3 (optional check)
+    //             if ($user->profile_pic && str_contains($user->profile_pic, 's3.amazonaws.com')) {
+    //                 $oldPath = str_replace(Storage::disk('s3')->url(''), '', $user->profile_pic);
+    //                 if (Storage::disk('s3')->exists($oldPath)) {
+    //                     Storage::disk('s3')->delete($oldPath);
+    //                 }
+    //             }
+
+    //             $user->profile_pic = Storage::disk('s3')->url($path);
     //         }
 
     //         $user->save();
@@ -226,37 +235,59 @@ class SettingController extends Controller
         }
 
         try {
-            $validated = $request->validate([
+            // Validate URL instead of file
+            $validated = Validator::make($request->all(), [
                 'username' => 'nullable|string|max:255|unique:users,username,' . Auth::id(),
                 'first_name' => 'nullable|string|max:255',
-                'profile_pic' => 'nullable|image',
-            ]);
+                'profile_pic' => 'nullable|url|max:2048',  // <-- URL only
+            ])->after(function ($v) use ($request) {
+                // Optional: only allow certain hosts (e.g., your CDN/S3)
+                if ($request->filled('profile_pic')) {
+                    $url = $request->input('profile_pic');
+                    $host = parse_url($url, PHP_URL_HOST);
+
+                    $allowedHosts = array_filter([
+                        parse_url(config('filesystems.disks.s3.url') ?? '', PHP_URL_HOST),  // your AWS_URL/CDN host if set
+                        'cdn.example.com',  // add your CDN/custom domain(s) here
+                    ]);
+
+                    // If you want to restrict to allowed hosts, uncomment:
+                    // if ($allowedHosts && !in_array($host, $allowedHosts, true)) {
+                    //     $v->errors()->add('profile_pic', 'Profile picture must be hosted on an allowed domain.');
+                    // }
+
+                    // Optional: HEAD check to ensure it's an image
+                    try {
+                        $res = Http::timeout(5)->head($url);
+                        $ctype = $res->header('Content-Type');
+                        if (!$res->ok() || !is_string($ctype) || !Str::startsWith(strtolower($ctype), 'image/')) {
+                            $v->errors()->add('profile_pic', 'Profile picture URL must point to an image.');
+                        }
+                    } catch (\Throwable $e) {
+                        $v->errors()->add('profile_pic', 'Could not reach the profile picture URL.');
+                    }
+                }
+            })->validate();
 
             $user = Auth::user();
 
-            $user->username = $validated['username'] ?? $user->username;
-            $user->first_name = $validated['first_name'] ?? $user->first_name;
+            if (array_key_exists('username', $validated))
+                $user->username = $validated['username'];
+            if (array_key_exists('first_name', $validated))
+                $user->first_name = $validated['first_name'];
 
-            if ($request->hasFile('profile_pic')) {
-                $file = $request->file('profile_pic');
-                $path = $file->store('profile_pics', 's3');
+            if (array_key_exists('profile_pic', $validated)) {
+                $newUrl = $validated['profile_pic'];
 
-                if (!$path) {
-                    throw new Exception('Failed to upload profile picture to S3.');
-                }
-
-                // Make it publicly accessible
-                Storage::disk('s3')->setVisibility($path, 'public');
-
-                // Delete old image if it was stored on S3 (optional check)
-                if ($user->profile_pic && str_contains($user->profile_pic, 's3.amazonaws.com')) {
-                    $oldPath = str_replace(Storage::disk('s3')->url(''), '', $user->profile_pic);
-                    if (Storage::disk('s3')->exists($oldPath)) {
-                        Storage::disk('s3')->delete($oldPath);
+                // If old avatar was on our S3/CDN, delete it
+                if ($user->profile_pic && isS3BackedUrl($user->profile_pic)) {
+                    $oldKey = ltrim(parse_url($user->profile_pic, PHP_URL_PATH) ?? '', '/');
+                    if ($oldKey && Storage::disk('s3')->exists($oldKey)) {
+                        Storage::disk('s3')->delete($oldKey);
                     }
                 }
 
-                $user->profile_pic = Storage::disk('s3')->url($path);
+                $user->profile_pic = $newUrl;  // store the URL as-is
             }
 
             $user->save();
@@ -267,10 +298,11 @@ class SettingController extends Controller
                 'data' => [
                     'username' => $user->username,
                     'first_name' => $user->first_name,
-                    'profile_pic' => $user->profile_pic,
+                    'profile_pic' => $user->profile_pic,  // full URL
+                    'profile_url' => route('profile.show', ['username' => $user->username], true),  // absolute link
                 ]
             ]);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Error updating user profile: ' . $e->getMessage());
 
             return response()->json([
@@ -279,6 +311,20 @@ class SettingController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Detect if a URL points to your S3/CDN for safe deletion of the old object.
+     */
+    function isS3BackedUrl(string $url): bool
+    {
+        $configured = rtrim(config('filesystems.disks.s3.url') ?? '', '/');  // e.g. https://cdn.example.com
+        if ($configured && Str::startsWith($url, $configured)) {
+            return true;
+        }
+        // Fallback match for raw S3 URLs (adjust as needed)
+        $host = parse_url($url, PHP_URL_HOST) ?? '';
+        return Str::contains($host, '.s3.') || Str::endsWith($host, '.amazonaws.com');
     }
 
     public function storeOrUpdate(Request $request)
