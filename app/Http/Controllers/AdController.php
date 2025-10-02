@@ -22,6 +22,7 @@ class AdController extends Controller
 
             return response()->json([
                 'success' => true,
+                'message' => "Ad fetched successfully.",
                 'data' => $ads,
             ]);
         } catch (\Exception $e) {
@@ -137,6 +138,7 @@ class AdController extends Controller
 
             return response()->json([
                 'success' => true,
+                'message' => "Ad fetched successfully.",
                 'data' => [
                     'id' => $ad->id,
                     'ads' => $ad->ads,  // directly return the stored string

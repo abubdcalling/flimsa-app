@@ -343,6 +343,7 @@ class GenreController extends Controller
 
             return response()->json([
                 'success' => true,
+                'message' => "Content loaded successfully.",
                 'data' => $data
             ]);
         } catch (\Exception $e) {
@@ -777,14 +778,33 @@ class GenreController extends Controller
     // }
 
     public function index()
-    {
+{
+    try {
         $genres = Genre::all()->map(function ($genre) {
-            $genre->thumbnail = url($genre->thumbnail);
-            return $genre;
-        });  // gets all columns and all records
+            return [
+                'id' => $genre->id,
+                'name' => $genre->name,
+                'thumbnail' => $genre->thumbnail ? url($genre->thumbnail) : null, // Handle null thumbnail
+                'date' => $genre->created_at?->format('Y-m-d'), // Include formatted created_at date
+                'content' => $genre->content, // Include content (ensure relationship is defined)
+            ];
+        });
 
-        return response()->json($genres);
+        return response()->json([
+            'success' => true,
+            'message' => 'Genres fetched successfully.',
+            'data' => $genres
+        ], 200);
+    } catch (\Exception $e) {
+        \Log::error('Error fetching genres: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch genres.',
+            'data' => []
+        ], 500);
     }
+}
 
     public function showsAllGenres()
     {

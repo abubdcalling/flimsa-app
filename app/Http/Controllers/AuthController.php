@@ -98,22 +98,25 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $user ? [
-                'id'         => $user->id,
-                'first_name' => $user->first_name ?? $user->name ?? null,
-                'email'      => $user->email,
-                'gender'     => $user->gender ?? null,
-                'role'       => $user->roles,
-                'plan_type'  => $user->plan_type ?? null,
-            ] : null,
-            'meta' => [
+            'data' => [
                 'token_type'         => 'bearer',
                 'access_token'       => $token,
                 'expires_in'         => $accessTtl * 60,      // seconds
                 'refresh_token'      => $refreshToken,        // actual JWT string
                 'refresh_expires_in' => $refreshTtl * 60,     // seconds
-            ],
+
+                    'user' => $user ? [
+                        'id'         => $user->id,
+                        'first_name' => $user->first_name ?? $user->name ?? null,
+                        'email'      => $user->email,
+                        'gender'     => $user->gender ?? null,
+                        'role'       => $user->roles,
+                        'plan_type'  => $user->plan_type ?? null,
+                    ] : null,
+                ]
+            
         ]);
+
     }
 
     public function refresh(Request $request)

@@ -404,7 +404,7 @@ class ContentController extends Controller
             // ✅ Authentication check
             if (!Auth::check()) {
                 return response()->json([
-                    'status' => 'error',
+                    'success' => 'false',
                     'message' => 'Unauthenticated access. Please log in.'
                 ], 401);
             }
@@ -424,7 +424,7 @@ class ContentController extends Controller
             // ✅ Authorization: Only allow self or subscribers
             if ($userId != $authUser->id) {
                 return response()->json([
-                    'status' => 'error',
+                    'success' => false,
                     'message' => 'Unauthorized access.'
                 ], 403);
             }
@@ -446,7 +446,7 @@ class ContentController extends Controller
 
             if ($contentIds->isEmpty()) {
                 return response()->json([
-                    'status' => 'success',
+                    'success' => true,
                     'message' => 'No video tracking records found.',
                     'data' => []
                 ]);
@@ -465,7 +465,7 @@ class ContentController extends Controller
             });
 
             return response()->json([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'User viewed contents fetched successfully.',
                 'data' => $contents
             ]);
@@ -473,7 +473,7 @@ class ContentController extends Controller
             \Log::error('History fetch error: ' . $e->getMessage());
 
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Failed to fetch user viewed contents.',
                 'error' => $e->getMessage()
             ], 500);
@@ -486,7 +486,7 @@ class ContentController extends Controller
             // ✅ Authentication check
             if (!Auth::check()) {
                 return response()->json([
-                    'status' => 'error',
+                    'success' => false,
                     'message' => 'Unauthenticated access. Please log in.'
                 ], 401);
             }
@@ -500,7 +500,7 @@ class ContentController extends Controller
             // ✅ Authorization: Only allow self or subscribers
             if ($userId != $authUser->id) {
                 return response()->json([
-                    'status' => 'error',
+                    'success' => false,
                     'message' => 'Unauthorized access.'
                 ], 403);
             }
@@ -521,7 +521,7 @@ class ContentController extends Controller
 
             if ($contentIds->isEmpty()) {
                 return response()->json([
-                    'status' => 'success',
+                    'success' => true,
                     'message' => 'No video tracking records found.',
                     'data' => []
                 ]);
@@ -540,7 +540,7 @@ class ContentController extends Controller
             });
 
             return response()->json([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'User viewed contents fetched successfully.',
                 'data' => $contents
             ]);
@@ -548,7 +548,7 @@ class ContentController extends Controller
             \Log::error('History fetch error: ' . $e->getMessage());
 
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Failed to fetch user viewed contents.',
                 'error' => $e->getMessage()
             ], 500);
@@ -565,13 +565,13 @@ class ContentController extends Controller
                 ->paginate($perPage);
 
             return response()->json([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'Upcoming content retrieved successfully.',
                 'data' => $upcoming
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Failed to retrieve upcoming content.',
                 'error' => $e->getMessage()
             ], 500);
@@ -911,10 +911,13 @@ class ContentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $content,
+            'message' => "Content retrieved successfully.",
+            'data' => [
+             'content' => $content,
             'liked' => $isLiked,
             'wishlisted' => (bool) $isWishlisted,
             'elapsed_time' => $elapsedTime,
+            ] 
         ]);
     }
 
